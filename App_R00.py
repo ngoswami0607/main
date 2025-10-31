@@ -3,7 +3,7 @@ import streamlit as st
 
 # Import each functional block
 from functions.building_dimension import building_dimension
-#from functions.code_jurisdiction import code_jurisdiction
+from functions.code_jurisdiction import code_jurisdiction
 from functions.risk_category import risk_category
 from functions.wind_speed import wind_speed
 from functions.wind_pressure_calc import wind_pressure_calc
