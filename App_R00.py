@@ -2,7 +2,6 @@
 
 App_R00.py
 functions/
-│
 ├── __init__.py
 ├── building_dimension.py
 ├── code_jurisdiction.py
