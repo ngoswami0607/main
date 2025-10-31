@@ -52,26 +52,44 @@ def load_icc_table_pdfplumber():
 def extract_relevant_codes(code_text):
     """
     Extract IBC, ASCE 7, IECC, and ASHRAE codes from text.
+    If ASCE 7 year isn't found, infer it from IBC year.
+    If ASHRAE 90.1 year isn't found, infer it from IECC year.
     """
     text = code_text.upper().replace("–", "-").replace("—", "-")
 
     building_code = ibc_code = asce_code = iecc_code = ashrae_code = ""
 
+    # --- Direct pattern matching ---
     ibc_match = re.search(r"IBC\s*(19|20)\d{2}", text)
     asce_match = re.search(r"ASCE\s*7[-–]\s*(\d{2})", text)
     iecc_match = re.search(r"IECC\s*(19|20)\d{2}", text)
     ashrae_match = re.search(r"(ASHRAE|90\.1)[-\s]*(19|20)\d{2}", text)
 
+    # --- Extract and normalize ---
+    ibc_year = asce_year = iecc_year = ashrae_year = ""
+
     if ibc_match:
-        ibc_code = f"IBC {ibc_match.group(0).split()[-1]}"
-    if asce_match:
-        asce_code = f"ASCE 7-{asce_match.group(1)}"
-    if iecc_match:
-        iecc_code = f"IECC {iecc_match.group(0).split()[-1]}"
-    if ashrae_match:
-        ashrae_code = f"ASHRAE 90.1-{ashrae_match.group(2)}"
-    if ibc_code:
+        ibc_year = ibc_match.group(0)[-4:]
+        ibc_code = f"IBC {ibc_year}"
         building_code = ibc_code
+    if asce_match:
+        asce_year = asce_match.group(1)
+        asce_code = f"ASCE 7-{asce_year}"
+    if iecc_match:
+        iecc_year = iecc_match.group(0)[-4:]
+        iecc_code = f"IECC {iecc_year}"
+    if ashrae_match:
+        ashrae_year = ashrae_match.group(0)[-4:]
+        ashrae_code = f"ASHRAE 90.1-{ashrae_year}"
+
+    # --- Inference logic ---
+    if not asce_code and ibc_year:
+        # ASCE 7 editions typically lag IBC by 3 years
+        inferred_asce_year = str(int(ibc_year) - 3)
+        asce_code = f"ASCE 7-{inferred_asce_year[-2:]}"
+    if not ashrae_code and iecc_year:
+        # ASHRAE 90.1 editions usually match IECC cycle
+        ashrae_code = f"ASHRAE 90.1-{iecc_year}"
 
     # --- Fallback: numeric-only format ---
     if not any([ibc_code, asce_code, iecc_code, ashrae_code]):
@@ -108,9 +126,9 @@ def code_jurisdiction():
         st.markdown("### 🔍 Parsed Code References")
         st.write(f"**Building Code:** {building_code or 'N/A'}")
         st.write(f"**IBC Reference:** {ibc_code or 'N/A'}")
-        st.write(f"**ASCE 7 Edition:** {asce_code or 'N/A'}")
+        st.write(f"**ASCE 7 Edition (inferred if missing):** {asce_code or 'N/A'}")
         st.write(f"**IECC Edition:** {iecc_code or 'N/A'}")
-        st.write(f"**ASHRAE 90.1 Edition:** {ashrae_code or 'N/A'}")
+        st.write(f"**ASHRAE 90.1 Edition (inferred if missing):** {ashrae_code or 'N/A'}")
     else:
         st.warning("State not found in the ICC dataset.")
 
