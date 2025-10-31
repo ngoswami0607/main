@@ -19,8 +19,8 @@ st.markdown("---")
 # Step 1
 least_width, longest_width, height = building_dimension()
 
-# # Step 2
-# asce_code = code_jurisdiction()
+# Step 2
+asce_code = code_jurisdiction()
 
 # Step 3
 risk_category = risk_category()
