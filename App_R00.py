@@ -1,4 +1,7 @@
 import streamlit as st
+import sys, os
+# Ensure 'functions' folder is in the import path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 'functions')))
 
 # Import each functional block
 from functions.building_dimension import building_dimension
