@@ -1,5 +1,14 @@
 import streamlit as st
-import pdfplumber, requests, io, pandas as pd, re
+import requests
+import plotly.graph_objects as go 
+import pdfplumber
+import pandas as pd
+import io
+import urllib.parse 
+import json 
+import openai 
+import io
+import re
 
 @st.cache_data(show_spinner=True)
 def load_icc_table_pdfplumber():
