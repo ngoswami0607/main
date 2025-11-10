@@ -25,7 +25,7 @@ least_width, longest_width, height = building_dimension()
 if st.button("🔍 Fetch ICC Code Information"):
     with st.spinner(f"Fetching ICC codes for {location}..."):
         if location.strip():
-            result = fetch_icc_codes(location)
+            result = code_jurisdiction_1(location)
             st.markdown("### 📘 Applicable Building Codes:")
             st.markdown(result)
         else:
