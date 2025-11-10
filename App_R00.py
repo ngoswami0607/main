@@ -1,12 +1,12 @@
 import sys, os
 import streamlit as st
+import traceback
 
 # Import each functional block
 from functions.building_dimension import building_dimension
 from functions.code_jurisdiction_1 import code_jurisdiction_1
-except Exception as e:
-    import traceback, streamlit as st
-    st.error("Import of functions.code_jurisdiction_1 failed")
+except Exception:
+    st.error("Import of functions.code_jurisdiction_1 failed — full traceback below.")
     st.code(traceback.format_exc())
     st.stop()
 
