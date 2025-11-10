@@ -4,6 +4,12 @@ import streamlit as st
 # Import each functional block
 from functions.building_dimension import building_dimension
 from functions.code_jurisdiction_1 import code_jurisdiction_1
+except Exception as e:
+    import traceback, streamlit as st
+    st.error("Import of functions.code_jurisdiction_1 failed")
+    st.code(traceback.format_exc())
+    st.stop()
+
 from functions.risk_category import risk_category
 from functions.wind_speed import wind_speed
 from functions.wind_pressure_calc import wind_pressure_calc
