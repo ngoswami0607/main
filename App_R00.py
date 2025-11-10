@@ -20,7 +20,16 @@ st.markdown("---")
 least_width, longest_width, height = building_dimension()
 
 # Step 2
-asce_code = code_jurisdiction()
+# asce_code = code_jurisdiction()
+
+if st.button("🔍 Fetch ICC Code Information"):
+    with st.spinner(f"Fetching ICC codes for {location}..."):
+        if location.strip():
+            result = fetch_icc_codes(location)
+            st.markdown("### 📘 Applicable Building Codes:")
+            st.markdown(result)
+        else:
+            st.warning("Please enter a valid location name.")
 
 # Step 3
 risk_category = risk_category()
