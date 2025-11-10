@@ -3,7 +3,7 @@ plotly
 pdfplumber
 pandas
 requests
-requests
+beautifulsoup4
 plotly
 pdfplumber==0.11.0
 pdfminer.six==20231228
