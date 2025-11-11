@@ -1,10 +1,13 @@
-import sys, os
+import sys
+import os
 import streamlit as st
 import traceback
 from functions.code_jurisdiction_1 import code_jurisdiction_1
 from functions.risk_category import risk_category
 from functions.wind_speed import wind_speed
 from functions.wind_pressure_calc import wind_pressure_calc
+
+print(os.listdir("functions"))
 
 st.set_page_config(page_title="Wind Load Calculator", layout="centered")
 st.title("🌪️ Wind Load Calculator (ASCE 7)")
