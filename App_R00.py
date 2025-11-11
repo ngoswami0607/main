@@ -1,16 +1,7 @@
 import sys, os
 import streamlit as st
 import traceback
-
-# Import each functional block
-from functions.building_dimension import building_dimension
-try:
-    from functions.code_jurisdiction_1 import code_jurisdiction_1
-except Exception:
-    st.error("Import of functions.code_jurisdiction_1 failed — full traceback below.")
-    st.code(traceback.format_exc())
-    st.stop()
-
+from functions.code_jurisdiction_1 import code_jurisdiction_1
 from functions.risk_category import risk_category
 from functions.wind_speed import wind_speed
 from functions.wind_pressure_calc import wind_pressure_calc
@@ -27,7 +18,6 @@ st.markdown("---")
 least_width, longest_width, height = building_dimension()
 
 # Step 2
-# asce_code = code_jurisdiction()
 location = code_jurisdiction_1()
 
 # Step 3
