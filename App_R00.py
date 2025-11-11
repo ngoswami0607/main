@@ -2,6 +2,7 @@ import sys
 import os
 import streamlit as st
 import traceback
+from functions.building_dimension import building_dimension
 from functions.code_jurisdiction_1 import code_jurisdiction_1
 from functions.risk_category import risk_category
 from functions.wind_speed import wind_speed
