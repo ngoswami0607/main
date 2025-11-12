@@ -1,4 +1,4 @@
-gthimport sys
+import sys
 import os
 import streamlit as st
 import traceback
