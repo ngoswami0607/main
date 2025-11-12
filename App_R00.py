@@ -31,5 +31,5 @@ risk_category = risk_category()
 V = wind_speed()
 
 # Step 5
-wind_pressure_calc(height, V)
+wind_pressure_calc()
 
