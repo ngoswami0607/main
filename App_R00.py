@@ -1,4 +1,4 @@
-import sys
+gthimport sys
 import os
 import streamlit as st
 import traceback
@@ -28,7 +28,7 @@ location = code_jurisdiction_1()
 risk_category = risk_category()
 
 # Step 4
-V = wind_speed()
+V = wind_speed(height,V)
 
 # Step 5
 wind_pressure_calc()
