@@ -1,3 +1,4 @@
+
 def authenticate_user():
     """Authenticate the user using a password from Streamlit secrets."""
     PASSWORD = st.secrets["password"]
