@@ -1,50 +1,131 @@
-
-import streamlit as st
 import plotly.graph_objects as go
+def create_building_visualisation(NS_dimension, EW_dimension, z, include_inset=False, inset_offset=0, inset_height=0):
+    # Define colors
+    TT_LightBlue = "rgb(136,219,223)"
+    TT_MidBlue = "rgb(0,163,173)"
+    TT_DarkBlue = "rgb(0,48,60)"
+    TT_LightGrey = "rgb(223,224,225)"
+    
+    # Create a blank figure
+    fig = go.Figure()
 
-def building_dimension():
-    """Step 1 - Building Dimensions and 3D visualization"""
-
-    st.header("1️⃣ Building Dimensions")
-
-    col1, col2, col3 = st.columns(3)
-    least_width = col1.number_input("Least Width (ft)", min_value=0.0, value=30.0, format="%.2f")
-    longest_width = col2.number_input("Longest Width (ft)", min_value=0.0, value=80.0, format="%.2f")
-    height = col3.number_input("Mean Roof Height (ft)", min_value=0.0, value=30.0, format="%.2f")
-
-    st.markdown(f"""
-    **Summary:**  
-    - Least Width (x): `{least_width} ft`  
-    - Longest Width (y): `{longest_width} ft`  
-    - Height (z): `{height} ft`
-    """)
-
-    # Build 3D visualization
-    x = [0, least_width, least_width, 0, 0, least_width, least_width, 0]
-    y = [0, 0, longest_width, longest_width, 0, 0, longest_width, longest_width]
-    z = [0, 0, 0, 0, height, height, height, height]
-
-    i = [0, 0, 0, 1, 1, 2, 3, 4, 4, 5, 6, 7]
-    j = [1, 2, 3, 2, 5, 3, 7, 5, 6, 6, 7, 4]
-    k = [5, 3, 4, 5, 6, 7, 4, 6, 7, 4, 4, 5]
-
-    fig = go.Figure(data=[
-        go.Mesh3d(x=x, y=y, z=z, i=i, j=j, k=k, color='lightblue', opacity=1.0)
-    ])
-
-    # Add edges
-    edges = [(0,1),(1,2),(2,3),(3,0),(4,5),(5,6),(6,7),(7,4),(0,4),(1,5),(2,6),(3,7)]
-    for e in edges:
-        fig.add_trace(go.Scatter3d(
-            x=[x[e[0]], x[e[1]]],
-            y=[y[e[0]], y[e[1]]],
-            z=[z[e[0]], z[e[1]]],
-            mode='lines',
-            line=dict(color='black', width=3),
-            showlegend=False
-        ))
-
-    st.plotly_chart(fig, use_container_width=True)
-    st.markdown("---")
-
-    return least_width, longest_width, height
+    # Add ground base (extending beyond the building footprint)
+    ground_extension = max(NS_dimension, EW_dimension) * 0.3  # Extend ground beyond building
+    fig.add_trace(go.Mesh3d(
+        x=[-ground_extension, NS_dimension + ground_extension, NS_dimension + ground_extension, -ground_extension],
+        y=[-ground_extension, -ground_extension, EW_dimension + ground_extension, EW_dimension + ground_extension],
+        z=[0, 0, 0, 0],
+        i=[0, 0],
+        j=[1, 2],
+        k=[2, 3],
+        color=TT_LightGrey,
+        opacity=0.7,
+        showlegend=False,
+        hoverinfo='none'
+    ))
+    
+    # Define vertices for each face of the building
+    # North-South faces (mid blue)
+    # Front face (y=0)
+    fig.add_trace(go.Mesh3d(
+        x=[0, NS_dimension, NS_dimension, 0],
+        y=[0, 0, 0, 0],
+        z=[0, 0, z, z],
+        i=[0, 0],
+        j=[1, 2],
+        k=[2, 3],
+        color=TT_MidBlue,
+        opacity=1,
+        showlegend=False,
+        hoverinfo='none'
+    ))
+    
+    # Back face (y=EW_dimension)
+    fig.add_trace(go.Mesh3d(
+        x=[0, NS_dimension, NS_dimension, 0],
+        y=[EW_dimension, EW_dimension, EW_dimension, EW_dimension],
+        z=[0, 0, z, z],
+        i=[0, 0],
+        j=[1, 2],
+        k=[2, 3],
+        color=TT_MidBlue,
+        opacity=1,
+        showlegend=False,
+        hoverinfo='none'
+    ))
+    
+    # East-West faces (light blue)
+    # Left face (x=0)
+    fig.add_trace(go.Mesh3d(
+        x=[0, 0, 0, 0],
+        y=[0, EW_dimension, EW_dimension, 0],
+        z=[0, 0, z, z],
+        i=[0, 0],
+        j=[1, 2],
+        k=[2, 3],
+        color=TT_LightBlue,
+        opacity=1,
+        showlegend=False,
+        hoverinfo='none'
+    ))
+    
+    # Right face (x=NS_dimension)
+    fig.add_trace(go.Mesh3d(
+        x=[NS_dimension, NS_dimension, NS_dimension, NS_dimension],
+        y=[0, EW_dimension, EW_dimension, 0],
+        z=[0, 0, z, z],
+        i=[0, 0],
+        j=[1, 2],
+        k=[2, 3],
+        color=TT_LightBlue,
+        opacity=1,
+        showlegend=False,
+        hoverinfo='none'
+    ))
+    
+    # Top face (z=z)
+    fig.add_trace(go.Mesh3d(
+        x=[0, NS_dimension, NS_dimension, 0],
+        y=[0, 0, EW_dimension, EW_dimension],
+        z=[z, z, z, z],
+        i=[0, 0],
+        j=[1, 2],
+        k=[2, 3],
+        color=TT_LightBlue,
+        opacity=1,
+        showlegend=False,
+        hoverinfo='none'
+    ))
+    
+    # Bottom face (z=0)
+    fig.add_trace(go.Mesh3d(
+        x=[0, NS_dimension, NS_dimension, 0],
+        y=[0, 0, EW_dimension, EW_dimension],
+        z=[0, 0, 0, 0],
+        i=[0, 0],
+        j=[1, 2],
+        k=[2, 3],
+        color=TT_LightBlue,
+        opacity=1,
+        showlegend=False,
+        hoverinfo='none'
+    ))
+    
+    # Set the layout to be minimal with no axes or grid
+    fig.update_layout(
+        scene=dict(
+            xaxis=dict(visible=False, showgrid=False, showticklabels=False, showbackground=False, zeroline=False),
+            yaxis=dict(visible=False, showgrid=False, showticklabels=False, showbackground=False, zeroline=False),
+            zaxis=dict(visible=False, showgrid=False, showticklabels=False, showbackground=False, zeroline=False),
+            aspectmode='data'
+        ),
+        margin=dict(l=0, r=0, b=0, t=0),
+        showlegend=False,
+        scene_camera=dict(
+            eye=dict(x=1.5, y=-1.5, z=1.2)
+        ),
+        height=400,
+        hovermode=False
+    )
+    
+    return fig
