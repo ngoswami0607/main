@@ -28,8 +28,8 @@ location = code_jurisdiction_1()
 risk_category = risk_category()
 
 # Step 4
-V = wind_speed(height,V)
+V = wind_speed()
 
 # Step 5
-wind_pressure_calc()
+wind_pressure_calc(height,V)
 
