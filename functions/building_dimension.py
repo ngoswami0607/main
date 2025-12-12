@@ -6,17 +6,10 @@ def building_dimension(NS_dimension, EW_dimension, z,
     # Colors
     TT_LightBlue = "rgb(136,219,223)"
     TT_LightGrey = "rgb(223,224,225)"
-
-st.header("1️⃣ Building Dimensions")
-
-col1, col2, col3 = st.columns(3)
-least_width = col1.number_input("Least Width (ft)", min_value=0.0, value=30.0, format="%.2f")
-longest_width = col2.number_input("Longest Width (ft)", min_value=0.0, value=80.0, format="%.2f")
-height = col3.number_input("Mean Roof Height (ft)", min_value=0.0, value=30.0, format="%.2f")
                                     
-    L = float(least_width)
-    W = float(longest_width)
-    H = float(height)
+    L = float(NS_dimesnion)
+    W = float(EW_dimension)
+    H = float(z)
 
     fig = go.Figure()
 
