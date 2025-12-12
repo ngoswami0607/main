@@ -1,7 +1,7 @@
 import plotly.graph_objects as go
 
 
-def create_building_visualisation(NS_dimension, EW_dimension, z,
+def building_dimension(NS_dimension, EW_dimension, z,
                                   include_inset=False, inset_offset=0, inset_height=0):
     # Colors
     TT_LightBlue = "rgb(136,219,223)"
