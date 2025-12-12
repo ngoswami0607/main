@@ -29,6 +29,43 @@ def wind_pressure_calc(height, V):
     structure = st.selectbox("Structure Type:", list(structure_types.keys()))
     Kd = structure_types[structure]
 
+    def exposure_category_picker_cards() -> str:
+        st.subheader("Exposure Category")
+
+    exposure_meta = {
+        "B": {
+            "label": "Urban/suburban/wooded; roughness B upwind ≥1500 ft (h≤30) or ≥2600 ft/20h (h>30).",
+            "img": "photos_Exposure_Cat/exposure_B.png",
+        },
+        "C": {
+            "label": "Open terrain w/ scattered obstructions; default when B or D does not apply.",
+            "img": "photos_Exposure_Cat/exposure_C.png",
+        },
+        "D": {
+            "label": "Flat unobstructed/water; roughness D upwind ≥5000 ft/20h, or within 600 ft/20h of D.",
+            "img": "photos_Exposure_Cat/exposure_D.png",
+        },
+    }
+
+    # Keep state
+    if "exposure_category" not in st.session_state:
+        st.session_state["exposure_category"] = "C"
+
+    cols = st.columns(3)
+    for col, key in zip(cols, ["B", "C", "D"]):
+        with col:
+            st.image(exposure_meta[key]["img"], use_container_width=True)
+            st.write(f"**Exposure {key}**")
+            st.caption(exposure_meta[key]["label"])
+            if st.button(f"Choose {key}", key=f"choose_exposure_{key}"):
+                st.session_state["exposure_category"] = key
+
+    chosen = st.session_state["exposure_category"]
+    st.success(f"Selected Exposure {chosen}")
+    st.markdown("---")
+    return chosen
+
+    
     exposure = st.selectbox("Exposure Category:", ["B", "C", "D"], index=1)
 
     def get_kz(h, exposure):
