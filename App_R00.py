@@ -21,15 +21,19 @@ st.markdown("---")
 
 # Step 1 (ONLY here — remove the duplicate number_inputs you had in App_R00.py)
 least_width, longest_width, height = building_dimension()
-# Step 2
-location = code_jurisdiction_1()
+
+# Step 2: roof type picker (uses height)
+roof_info = roof_type_picker(height)
 
 # Step 3
-risk_category = risk_category()
+location = code_jurisdiction_1()
 
 # Step 4
-V = wind_speed()
+risk_category = risk_category()
 
 # Step 5
+V = wind_speed()
+
+# Step 6
 wind_pressure_calc(height,V)
 
