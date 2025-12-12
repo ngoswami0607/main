@@ -23,6 +23,13 @@ This calculator helps you organize inputs for **ASCE 7 wind load determination**
 st.markdown("---")
 
 # Step 1
+st.header("1️⃣ Building Dimensions")
+
+col1, col2, col3 = st.columns(3)
+least_width = col1.number_input("Least Width (ft)", min_value=0.0, value=30.0, format="%.2f")
+longest_width = col2.number_input("Longest Width (ft)", min_value=0.0, value=80.0, format="%.2f")
+height = col3.number_input("Mean Roof Height (ft)", min_value=0.0, value=30.0, format="%.2f")
+
 least_width, longest_width, height = building_dimension()
 
 # Step 2
