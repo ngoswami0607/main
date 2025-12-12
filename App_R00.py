@@ -9,6 +9,7 @@ from functions.code_jurisdiction_1 import code_jurisdiction_1
 from functions.risk_category import risk_category
 from functions.wind_speed import wind_speed
 from functions.wind_pressure_calc import wind_pressure_calc
+from functions.roof_type_picker import roof_type_picker
 
 authenticate_user()
 
