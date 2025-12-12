@@ -1,14 +1,31 @@
 import streamlit as st
 
 def wind_pressure_calc(height, V):
+    % this should change based on code jurisditcion
     st.header("5️⃣ Basic Wind Pressure Calculation (ASCE 7-16)")
 
+    # --- Directionality Factor (Kd) ---
     structure_types = {
-        "Main Wind Force Resisting System (Buildings)": 0.85,
-        "Components and Cladding": 0.85,
-        "Circular Domes": 1.0,
-        "Chimneys / Tanks (Round)": 1.0
+        #"Buildings – MWFRS": 0.85,
+        "Buildings – Components & Cladding": 0.85,
+        "Arched Roofs": 0.85,
+        "Circular Domes (Axisymmetric)": 1.00,
+        "Circular Domes (Non-axisymmetric system)": 0.95,
+        "Chimneys / Tanks – Square": 0.90,
+        "Chimneys / Tanks – Hexagonal": 0.95,
+        "Chimneys / Tanks – Octagonal": 1.00,
+        "Chimneys / Tanks – Round": 1.00,
+        "Chimneys / Tanks – Octagonal (Non-axisymmetric system)": 0.95,
+        "Chimneys / Tanks – Round (Non-axisymmetric system)": 0.95,
+        "Solid Freestanding Walls": 0.85,
+        "Rooftop Equipment (Solid)": 0.85,
+        "Attached Signs (Solid)": 0.85,
+        "Open Signs": 0.85,
+        "Single-Plane Open Frames": 0.85,
+        "Trussed Towers – Triangular / Square / Rectangular": 0.85,
+        "Trussed Towers – All Other Cross-Sections": 0.95,
     }
+
     structure = st.selectbox("Structure Type:", list(structure_types.keys()))
     Kd = structure_types[structure]
 
