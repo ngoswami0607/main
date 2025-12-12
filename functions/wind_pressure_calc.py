@@ -1,7 +1,7 @@
 import streamlit as st
 
 def wind_pressure_calc(height, V):
-    % this should change based on code jurisditcion
+    # this should change based on code jurisditcion
     st.header("5️⃣ Basic Wind Pressure Calculation (ASCE 7-16)")
 
     # --- Directionality Factor (Kd) ---
