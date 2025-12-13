@@ -73,7 +73,7 @@ def code_jurisdiction_1():
     if st is None:
         raise RuntimeError("Streamlit is required to run this function.")
 
-    st.subheader("🏛️ Code Jurisdiction / Project Location")
+    st.subheader("3️⃣🏛️ Code Jurisdiction / Project Location")
 
     location = st.text_input("Enter the project location (City, State):", "")
 
