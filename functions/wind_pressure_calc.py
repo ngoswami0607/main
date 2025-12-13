@@ -108,6 +108,11 @@ def get_kz(height_ft, exposure):
     Kz = get_kz(height, exposure)
     st.success(f"Kz (at {height:.1f} ft, Exposure {exposure}) = **{Kz:.3f}**")
 
+    st.metric(
+    label=f"Kz (Exposure {exposure}, h = {height:.0f} ft)",
+    value=f"{Kz:.3f}"
+    )
+
     # --- Constants ---
     Kzt = 1.0
     Ke = 1.0
