@@ -1,6 +1,6 @@
 import base64
 import streamlit as st
-from functions.kz import kz
+from functions.kz import compute_kz
 
 
 def _img_to_base64(path: str) -> str:
