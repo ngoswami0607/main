@@ -1,7 +1,7 @@
 import streamlit as st
 
 def risk_category():
-    st.header("3️⃣ Risk Category")
+    st.header("4️⃣ Risk Category")
     risk_map = {
         "I": "Low risk to human life (e.g., storage, barns)",
         "II": "Typical occupancy (residential, commercial, offices)",
