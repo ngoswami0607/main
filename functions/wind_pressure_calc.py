@@ -103,15 +103,13 @@ def get_kz(height_ft, exposure):
         if h1 <= h <= h2:
             k1, k2 = table[exposure][h1], table[exposure][h2]
             return k1 + (k2 - k1) * ((h - h1) / (h2 - h1))
-    return table[exposure][500]
-
+    
     Kz = get_kz(height, exposure)
     st.success(f"Kz (at {height:.1f} ft, Exposure {exposure}) = **{Kz:.3f}**")
 
     st.metric(
     label=f"Kz (Exposure {exposure}, h = {height:.0f} ft)",
-    value=f"{Kz:.3f}"
-    )
+    value=f"{Kz:.3f}"    )
 
     # --- Constants ---
     Kzt = 1.0
