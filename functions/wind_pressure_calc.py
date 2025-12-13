@@ -1,3 +1,4 @@
+from functions.kz import compute_kz
 import base64
 import streamlit as st
 
@@ -86,7 +87,7 @@ def wind_pressure_calc(height, V):
     st.markdown("---")
 
 # --- Compute Kz from Table 26.10-1 ---
-def get_kz(height_ft, exposure):
+"""def get_kz(height_ft, exposure):
     # Table 26.10-1 (ASCE 7-16)
     table = {
         "B": {15: 0.57, 20: 0.62, 25: 0.66, 30: 0.70, 40: 0.76, 50: 0.81, 60: 0.85, 70: 0.89, 80: 0.93, 90: 0.96, 100: 0.99, 120: 1.04, 140: 1.09, 160: 1.13, 200: 1.20, 250: 1.28, 300: 1.35, 350: 1.41, 400: 1.47, 450: 1.52, 500: 1.56},
@@ -109,7 +110,31 @@ def get_kz(height_ft, exposure):
 
     st.metric(
     label=f"Kz (Exposure {exposure}, h = {height:.0f} ft)",
-    value=f"{Kz:.3f}"    )
+    value=f"{Kz:.3f}"    )"""
+
+def wind_pressure_calc(height, V):
+
+    exposure = st.session_state["exposure_category"]
+    Kz = compute_kz(height, exposure)
+
+    st.metric(
+        label=f"Kz (Exposure {exposure}, h = {height:.0f} ft)",
+        value=f"{Kz:.3f}"
+    )
+
+    Kzt = 1.0
+    Ke = 1.0
+    Kd = 0.85  # or from your structure selector
+
+    q = 0.00256 * Kz * Kzt * Kd * Ke * (V ** 2)
+
+    st.metric("Velocity Pressure qh", f"{q:.2f} psf")
+
+    st.caption(
+        f"Kz={Kz:.3f}, Kd={Kd:.2f}, V={V:.1f} mph, h={height:.1f} ft"
+    )
+
+    return exposure, Kz, q
 
     # --- Constants ---
     Kzt = 1.0
