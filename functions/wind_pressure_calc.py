@@ -121,5 +121,5 @@ def get_kz(height_ft, exposure):
     st.caption(f"Kd={Kd}, Kz={Kz}, Kzt={Kzt}, Ke={Ke}, V={float(V):.1f} mph, h={float(height):.1f} ft")
     st.markdown("---")
 
-    # (Optional) return exposure if you want to use it elsewhere
-    return exposure, q
+    # return exposure if you want to use it elsewhere
+    return exposure, q, Kz
