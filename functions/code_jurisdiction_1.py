@@ -41,6 +41,35 @@ class CodeAdoptionResult:
     iecc_year: Optional[int]
 
 
+def debug_icc_response(url: str) -> str:
+    headers = {
+        "User-Agent": "Mozilla/5.0 (compatible; WindLoadCalculator/1.0)",
+        "Accept": "text/html,application/xhtml+xml",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Referer": "https://codes.iccsafe.org/",
+    }
+    r = requests.get(url, headers=headers, timeout=25)
+    r.raise_for_status()
+    html = r.text
+
+    with st.expander("🔎 ICC raw response debug (click to expand)"):
+        st.write("Status:", r.status_code)
+        st.write("HTML length:", len(html))
+        probes = [
+            "International Building Code",
+            "International Energy Conservation Code",
+            "2021 International Building Code",
+            "2021 International Energy Conservation Code",
+            "(IBC)",
+            "(IECC)",
+            "__NEXT_DATA__",
+        ]
+        for p in probes:
+            st.write(f"`{p}` present?", (p in html))
+        st.code(html[:2000])  # first chunk only
+
+    return html
+
 def _http_get(url: str) -> str:
     headers = {
         "User-Agent": "Mozilla/5.0 (compatible; WindLoadCalculator/1.0)",
@@ -77,7 +106,7 @@ def _walk(obj: Any):
         for v in obj:
             yield from _walk(v)
 
-
+"""
 def _extract_year_from_title_string(s: str) -> Optional[int]:
     """
     Extract a 4-digit year from strings like:
@@ -85,6 +114,32 @@ def _extract_year_from_title_string(s: str) -> Optional[int]:
     """
     m = re.search(r"\b(19\d{2}|20\d{2})\b", s)
     return int(m.group(1)) if m else None
+"""
+
+def extract_ibc_iecc_from_raw_html(html: str) -> Dict[str, Optional[int]]:
+    def find_year(pattern: str) -> Optional[int]:
+        m = re.search(pattern, html, flags=re.IGNORECASE)
+        return int(m.group(1)) if m else None
+
+    # Aggressive: search on raw HTML (works even if content is not “visible text”)
+    ibc = find_year(r"\b(19\d{2}|20\d{2})\b\s+International\s+Building\s+Code")
+    iecc = find_year(r"\b(19\d{2}|20\d{2})\b\s+International\s+Energy\s+Conservation\s+Code")
+
+    # If multiple years occur (rare), prefer the latest match
+    ibc_all = re.findall(r"\b(19\d{2}|20\d{2})\b\s+International\s+Building\s+Code", html, flags=re.IGNORECASE)
+    iecc_all = re.findall(r"\b(19\d{2}|20\d{2})\b\s+International\s+Energy\s+Conservation\s+Code", html, flags=re.IGNORECASE)
+    if ibc_all:
+        ibc = max(int(y) for y in ibc_all)
+    if iecc_all:
+        iecc = max(int(y) for y in iecc_all)
+
+    return {"ibc_year": ibc, "iecc_year": iecc}
+
+
+def lookup_years_state_page(state_url: str) -> Dict[str, Optional[int]]:
+    html = debug_icc_response(state_url)   # <-- debug visible in your app
+    yrs = extract_ibc_iecc_from_raw_html(html)
+    return yrs
 
 
 def _extract_years_from_next_data(next_data: Dict[str, Any]) -> Dict[str, Optional[int]]:
@@ -193,43 +248,23 @@ def code_jurisdiction_1():
     st.header("3️⃣ Code Jurisdiction / Project Location")
 
     city = st.text_input("City", value="Milwaukee")
+    state_url = "https://codes.iccsafe.org/codes/united-states/wisconsin"
 
-    state_labels = [f"{abbr} – {name}" for abbr, name in STATE_OPTIONS]
-    default_index = [abbr for abbr, _ in STATE_OPTIONS].index("WI")
-    state_choice = st.selectbox("State", state_labels, index=default_index)
-    state_abbr = state_choice.split("–")[0].strip()
+    yrs = lookup_years_state_page(state_url)
 
-    ibc_year = None
-    iecc_year = None
-    source_url = None
-    err = None
+    ibc_year = yrs["ibc_year"]
+    iecc_year = yrs["iecc_year"]
 
-    try:
-        res = lookup_icc_state_adoption_by_slug(state_abbr)
-        ibc_year = res.ibc_year
-        iecc_year = res.iecc_year
-        source_url = res.state_url
+    st.success("ICC state adoption found.")
+    st.caption(f"Source: {state_url}")
 
-        st.success("ICC state adoption found.")
-        st.caption(f"Source: {source_url}")
+    c1, c2 = st.columns(2)
+    with c1:
+        st.metric("IBC (State)", str(ibc_year) if ibc_year else "Not found")
+    with c2:
+        st.metric("IECC (State)", str(iecc_year) if iecc_year else "Not found")
 
-        c1, c2 = st.columns(2)
-        with c1:
-            st.metric("IBC (State)", str(ibc_year) if ibc_year else "Not found")
-        with c2:
-            st.metric("IECC (State)", str(iecc_year) if iecc_year else "Not found")
-
-    except Exception as e:
-        err = str(e)
-        st.warning("ICC lookup failed — enter years manually.")
-
-    if err:
-        with st.expander("Show lookup error / debug"):
-            st.code(err)
-            if source_url:
-                st.write("Running raw HTML debug:")
-                debug_icc_raw_html(source_url)
-
+    # manual override
     col1, col2 = st.columns(2)
     with col1:
         ibc_in = st.text_input("IBC Year", value=str(ibc_year) if ibc_year else "", placeholder="e.g. 2021")
@@ -239,8 +274,7 @@ def code_jurisdiction_1():
     st.markdown("---")
     return {
         "city": city,
-        "state": state_abbr,
+        "state_url": state_url,
         "ibc_year": int(ibc_in) if ibc_in.isdigit() else ibc_year,
         "iecc_year": int(iecc_in) if iecc_in.isdigit() else iecc_year,
-        "source": source_url,
     }
