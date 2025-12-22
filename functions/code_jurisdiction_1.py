@@ -54,6 +54,62 @@ class CodeAdoptionResult:
     iecc_year: Optional[int]
 
 
+def extract_next_build_id(html: str, debug: bool = False) -> Optional[str]:
+    patterns = [
+        r'"buildId"\s*:\s*"([^"]+)"',
+        r'/_next/static/([^/]+)/',
+        r'/_next/data/([^/]+)/',
+        r'/_next/static/([^/]+)/_buildManifest\.js',
+    ]
+
+    candidates: list[str] = []
+    for pat in patterns:
+        hits = re.findall(pat, html)
+        if hits:
+            candidates.extend(hits)
+
+    # de-dupe (preserve order)
+    seen = set()
+    uniq: list[str] = []
+    for c in candidates:
+        if c not in seen:
+            seen.add(c)
+            uniq.append(c)
+
+    if debug:
+        with st.expander("🧩 Build ID extraction debug"):
+            st.write("HTML length:", len(html))
+            st.write("Candidates:", uniq if uniq else "❌ none")
+            st.code(html[:1200])
+
+    return uniq[0] if uniq else None
+
+# Alias so old call sites don't crash
+_extract_next_build_id = extract_next_build_id
+
+
+"""
+------------------------------------------------------------
+4) One more gotcha: restart Streamlit after edits
+------------------------------------------------------------
+Streamlit sometimes keeps old module state. After you change function names:
+- stop the app
+- rerun `streamlit run App_R00.py`
+
+(If you're on Streamlit Cloud: hit "Rerun" or "Restart app".)
+
+------------------------------------------------------------
+5) Quick sanity test inside your lookup
+------------------------------------------------------------
+"""
+
+def _sanity_test_build_id(state_url: str):
+    import requests
+    headers = {"User-Agent": "Mozilla/5.0"}
+    html = requests.get(state_url, headers=headers, timeout=25).text
+    bid = extract_next_build_id(html, debug=True)
+    st.write("Extracted build id:", bid)
+
 def _slugify_state_name(state_name: str) -> str:
     # "District of Columbia" -> "district-of-columbia"
     return state_name.strip().lower().replace(" ", "-")
@@ -89,46 +145,6 @@ def _extract_next_build_id(html: str) -> Optional[str]:
     m = re.search(r"/_next/static/([^/]+)/_buildManifest\.js", html)
     return m.group(1) if m else None
 """
-
-
-def extract_next_build_id(html: str, debug: bool = False) -> str | None:
-    patterns = [
-        # Pattern A: direct buildId JSON fragment
-        r'"buildId"\s*:\s*"([^"]+)"',
-        # Pattern B: next static assets (general)
-        r'/_next/static/([^/]+)/',
-        # Pattern C: next data paths (general)
-        r'/_next/data/([^/]+)/',
-        # Pattern D: build manifest specifically (older structure)
-        r'/_next/static/([^/]+)/_buildManifest\.js',
-    ]
-
-    candidates: list[str] = []
-
-    for pat in patterns:
-        hits = re.findall(pat, html)
-        if hits:
-            # normalize hits (some patterns return many)
-            candidates.extend(hits if isinstance(hits, list) else [hits])
-
-    # de-dupe preserving order
-    seen = set()
-    uniq = []
-    for c in candidates:
-        if c not in seen:
-            seen.add(c)
-            uniq.append(c)
-
-    if debug:
-        with st.expander("🧩 Next.js Build-ID extraction debug"):
-            st.write("HTML length:", len(html))
-            st.write("Candidate build ids found:", uniq if uniq else "❌ none")
-            # show a tiny slice to confirm you’re not getting blocked
-            st.code(html[:1200])
-
-    # Heuristic: choose the FIRST candidate (usually correct). If you want, pick the most frequent.
-    return uniq[0] if uniq else None
-
 
 def _walk_strings(obj: Any):
     if isinstance(obj, dict):
