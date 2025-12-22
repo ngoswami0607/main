@@ -2,59 +2,21 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from typing import Optional, Dict, Tuple
+from typing import Optional, Dict
 
 import requests
 from bs4 import BeautifulSoup
+import streamlit as st
 
-
-st.header("3️⃣ Code Jurisdiction / Project Location")
-    city = st.text_input("Enter project city:", value="Milwaukee")
-    state = st.text_input("Enter project state (name or 2-letter):", value="WI")
-
-    ibc_year, iecc_year, state_url = code_jurisdiction_icc(city, state)
-
-    if ibc_year or iecc_year:
-        st.success("ICC state adoption lookup successful.")
-        if state_url:
-            st.caption(f"Source: {state_url}")
-
-        col1, col2 = st.columns(2)
-        with col1:
-            st.metric("IBC Year (State)", str(ibc_year) if ibc_year else "Not found")
-        with col2:
-            st.metric("IECC Year (State)", str(iecc_year) if iecc_year else "Not found")
-    else:
-        st.warning("Could not auto-detect from ICC. Please enter manually below.")
-
-    # Manual fallback
-    ibc_manual = st.text_input("IBC year (manual override):", value=str(ibc_year) if ibc_year else "")
-    iecc_manual = st.text_input("IECC year (manual override):", value=str(iecc_year) if iecc_year else "")
-
-    st.markdown("---")
-    return {
-        "city": city,
-        "state": state,
-        "ibc_year": int(ibc_manual) if ibc_manual.isdigit() else ibc_year,
-        "iecc_year": int(iecc_manual) if iecc_manual.isdigit() else iecc_year,
-        "source_url": state_url,
-    }
 
 ICC_US_CODES_URL = "https://codes.iccsafe.org/codes/united-states"
 
 STATE_ABBR_TO_NAME: Dict[str, str] = {
-    "AL": "Alabama", "AK": "Alaska", "AZ": "Arizona", "AR": "Arkansas", "CA": "California",
-    "CO": "Colorado", "CT": "Connecticut", "DE": "Delaware", "DC": "District of Columbia",
-    "FL": "Florida", "GA": "Georgia", "HI": "Hawaii", "ID": "Idaho", "IL": "Illinois",
-    "IN": "Indiana", "IA": "Iowa", "KS": "Kansas", "KY": "Kentucky", "LA": "Louisiana",
-    "ME": "Maine", "MD": "Maryland", "MA": "Massachusetts", "MI": "Michigan", "MN": "Minnesota",
-    "MS": "Mississippi", "MO": "Missouri", "MT": "Montana", "NE": "Nebraska", "NV": "Nevada",
-    "NH": "New Hampshire", "NJ": "New Jersey", "NM": "New Mexico", "NY": "New York",
-    "NC": "North Carolina", "ND": "North Dakota", "OH": "Ohio", "OK": "Oklahoma",
-    "OR": "Oregon", "PA": "Pennsylvania", "RI": "Rhode Island", "SC": "South Carolina",
-    "SD": "South Dakota", "TN": "Tennessee", "TX": "Texas", "UT": "Utah", "VT": "Vermont",
-    "VA": "Virginia", "WA": "Washington", "WV": "West Virginia", "WI": "Wisconsin",
-    "WY": "Wyoming",
+    "WI": "Wisconsin",
+    "IL": "Illinois",
+    "CA": "California",
+    "TX": "Texas",
+    # add more as needed
 }
 
 
@@ -66,102 +28,46 @@ class CodeAdoptionResult:
     iecc_year: Optional[int]
 
 
-def _http_get(url: str, timeout_s: int = 15) -> str:
-    headers = {
-        "User-Agent": "Mozilla/5.0 (compatible; WindLoadCalculator/1.0)",
-        "Accept": "text/html,application/xhtml+xml",
-    }
-    resp = requests.get(url, headers=headers, timeout=timeout_s)
-    resp.raise_for_status()
-    return resp.text
+# ------------------------
+# LOW-LEVEL HELPERS
+# ------------------------
+def _http_get(url: str) -> str:
+    headers = {"User-Agent": "Mozilla/5.0"}
+    r = requests.get(url, headers=headers, timeout=15)
+    r.raise_for_status()
+    return r.text
 
 
-def _normalize_state(state_input: str) -> str:
-    s = (state_input or "").strip()
-    if not s:
-        raise ValueError("State is required (name or 2-letter abbreviation).")
-
-    s_up = s.upper()
-    if len(s_up) == 2 and s_up in STATE_ABBR_TO_NAME:
-        return STATE_ABBR_TO_NAME[s_up]
-
-    # Title-case normalization for common cases
-    return s.title()
+def _normalize_state(state: str) -> str:
+    s = state.strip().upper()
+    return STATE_ABBR_TO_NAME.get(s, state.title())
 
 
-def _build_state_link_map(us_codes_html: str) -> Dict[str, str]:
-    """
-    Parses the ICC US codes landing page and builds:
-    { "Wisconsin": "https://codes.iccsafe.org/codes/wisconsin", ... }
-    """
-    soup = BeautifulSoup(us_codes_html, "html.parser")
-    links = {}
-
-    for a in soup.find_all("a", href=True):
-        href = a["href"].strip()
-        text = (a.get_text() or "").strip()
-
-        # ICC uses absolute/relative links; we normalize to absolute
-        if href.startswith("/codes/") and text:
-            abs_url = "https://codes.iccsafe.org" + href
-            # Many links exist; we only want state names likely on the page
-            # Example text: "Wisconsin"
-            if re.fullmatch(r"[A-Za-z .'-]{3,}", text):
-                links[text.title()] = abs_url
-
-    return links
-
-
-def _extract_code_year(page_text: str, code_name: str) -> Optional[int]:
-    """
-    Try to find a 4-digit year near the code name.
-    Works best when the page contains strings like:
-    "International Building Code (2021)" or "International Energy Conservation Code 2018"
-    """
-    # windowed search: find code name occurrences and scan nearby text for a year
-    candidates = []
-    for m in re.finditer(re.escape(code_name), page_text, flags=re.IGNORECASE):
-        start = max(0, m.start() - 120)
-        end = min(len(page_text), m.end() + 120)
-        snippet = page_text[start:end]
-        years = re.findall(r"\b(19\d{2}|20\d{2})\b", snippet)
-        candidates.extend([int(y) for y in years])
-
-    # Prefer most recent plausible year
-    if candidates:
-        candidates = [y for y in candidates if 1990 <= y <= 2099]
-        return max(candidates) if candidates else None
-    return None
+def _extract_year(text: str, code_name: str) -> Optional[int]:
+    matches = re.findall(rf"{code_name}.*?(20\d{{2}})", text, re.IGNORECASE)
+    return int(matches[-1]) if matches else None
 
 
 def lookup_icc_state_adoption(state: str) -> CodeAdoptionResult:
-    """
-    Given a state name or abbreviation, find the ICC state page and extract IBC/IECC years.
-    """
     state_name = _normalize_state(state)
 
-    us_html = _http_get(ICC_US_CODES_URL)
-    state_links = _build_state_link_map(us_html)
+    html = _http_get(ICC_US_CODES_URL)
+    soup = BeautifulSoup(html, "html.parser")
 
-    if state_name not in state_links:
-        # fallback: try loose match
-        matches = [k for k in state_links.keys() if k.lower() == state_name.lower()]
-        if matches:
-            state_name = matches[0]
-        else:
-            raise ValueError(f"Could not find '{state_name}' on ICC US codes page.")
+    state_url = None
+    for a in soup.find_all("a", href=True):
+        if a.text.strip() == state_name:
+            state_url = "https://codes.iccsafe.org" + a["href"]
+            break
 
-    state_url = state_links[state_name]
+    if not state_url:
+        raise ValueError(f"State not found on ICC site: {state_name}")
+
     state_html = _http_get(state_url)
-
-    # Extract years (best-effort)
-    ibc_year = _extract_code_year(state_html, "International Building Code")
-    iecc_year = _extract_code_year(state_html, "International Energy Conservation Code")
 
     return CodeAdoptionResult(
         state_name=state_name,
         state_url=state_url,
-        ibc_year=ibc_year,
-        iecc_year=iecc_year,
+        ibc_year=_extract_year(state_html, "International Building Code"),
+        iecc_year=_extract_year(state_html, "International Energy Conservation Code"),
     )
-
