@@ -71,3 +71,40 @@ def lookup_icc_state_adoption(state: str) -> CodeAdoptionResult:
         ibc_year=_extract_year(state_html, "International Building Code"),
         iecc_year=_extract_year(state_html, "International Energy Conservation Code"),
     )
+# ------------------------
+# STREAMLIT STEP FUNCTION
+# ------------------------
+def code_jurisdiction_1():
+    st.header("3️⃣ Code Jurisdiction / Project Location")
+
+    city = st.text_input("City", value="Milwaukee")
+    state = st.text_input("State (2-letter)", value="WI")
+
+    ibc_year = iecc_year = source_url = None
+
+    try:
+        res = lookup_icc_state_adoption(state)
+        ibc_year = res.ibc_year
+        iecc_year = res.iecc_year
+        source_url = res.state_url
+    except Exception as e:
+        st.warning("ICC lookup failed — enter manually.")
+
+    col1, col2 = st.columns(2)
+    with col1:
+        ibc_year = st.text_input("IBC Year", value=ibc_year or "")
+    with col2:
+        iecc_year = st.text_input("IECC Year", value=iecc_year or "")
+
+    if source_url:
+        st.caption(f"Source: {source_url}")
+
+    st.markdown("---")
+
+    return {
+        "city": city,
+        "state": state,
+        "ibc_year": int(ibc_year) if str(ibc_year).isdigit() else None,
+        "iecc_year": int(iecc_year) if str(iecc_year).isdigit() else None,
+        "source": source_url,
+    }
