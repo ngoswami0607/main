@@ -7,6 +7,7 @@ from typing import Optional, Dict
 import requests
 from bs4 import BeautifulSoup
 import streamlit as st
+st.sidebar.write("✅ Loaded:", os.path.abspath(__file__))
 
 
 ICC_US_CODES_URL = "https://codes.iccsafe.org/codes/united-states"
@@ -31,25 +32,8 @@ STATE_OPTIONS = [
     ("WI", "Wisconsin"), ("WY", "Wyoming"),
 ]
 
-STATE_ABBR_TO_NAME = {
-    "AL": "Alabama", "AK": "Alaska", "AZ": "Arizona", "AR": "Arkansas",
-    "CA": "California", "CO": "Colorado", "CT": "Connecticut",
-    "DE": "Delaware", "DC": "District of Columbia", "FL": "Florida",
-    "GA": "Georgia", "HI": "Hawaii", "ID": "Idaho", "IL": "Illinois",
-    "IN": "Indiana", "IA": "Iowa", "KS": "Kansas", "KY": "Kentucky",
-    "LA": "Louisiana", "ME": "Maine", "MD": "Maryland",
-    "MA": "Massachusetts", "MI": "Michigan", "MN": "Minnesota",
-    "MS": "Mississippi", "MO": "Missouri", "MT": "Montana",
-    "NE": "Nebraska", "NV": "Nevada", "NH": "New Hampshire",
-    "NJ": "New Jersey", "NM": "New Mexico", "NY": "New York",
-    "NC": "North Carolina", "ND": "North Dakota", "OH": "Ohio",
-    "OK": "Oklahoma", "OR": "Oregon", "PA": "Pennsylvania",
-    "RI": "Rhode Island", "SC": "South Carolina",
-    "SD": "South Dakota", "TN": "Tennessee", "TX": "Texas",
-    "UT": "Utah", "VT": "Vermont", "VA": "Virginia",
-    "WA": "Washington", "WV": "West Virginia",
-    "WI": "Wisconsin", "WY": "Wyoming",
-}
+STATE_ABBR_TO_NAME = dict(STATE_OPTIONS)
+assert "WI" in STATE_ABBR_TO_NAME, "STATE_ABBR_TO_NAME not initialized correctly."
 
 @dataclass
 class CodeAdoptionResult:
@@ -74,6 +58,7 @@ def _normalize_state(state_input: str) -> str:
     if not s:
         raise ValueError("State is required.")
     s_up = s.upper()
+    # if 2-letter, convert to full name using STATE_OPTIONS-derived dict
     if len(s_up) == 2 and s_up in STATE_ABBR_TO_NAME:
         return STATE_ABBR_TO_NAME[s_up]
     return s.title()
