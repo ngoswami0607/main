@@ -2,15 +2,14 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from typing import Optional, Dict, Any, List, Tuple
+from typing import Optional, Dict, Tuple, List
 
 import requests
 from bs4 import BeautifulSoup
 import streamlit as st
 
 
-ICC_STATE_URL_TEMPLATE = "https://codes.iccsafe.org/codes/{slug}"  # ✅ FIXED
-
+# --- State options (same as you already have) ---
 STATE_OPTIONS: List[Tuple[str, str]] = [
     ("AL", "Alabama"), ("AK", "Alaska"), ("AZ", "Arizona"), ("AR", "Arkansas"),
     ("CA", "California"), ("CO", "Colorado"), ("CT", "Connecticut"),
@@ -34,12 +33,11 @@ STATE_ABBR_TO_NAME: Dict[str, str] = dict(STATE_OPTIONS)
 
 
 @dataclass
-class CodeAdoptionResult:
-    state_abbr: str
-    state_name: str
-    state_url: str
+class AdoptionYears:
     ibc_year: Optional[int]
     iecc_year: Optional[int]
+    source_url: str
+    state_name: str
 
 
 def _http_get(url: str, timeout_s: int = 25) -> str:
@@ -47,92 +45,95 @@ def _http_get(url: str, timeout_s: int = 25) -> str:
         "User-Agent": "Mozilla/5.0 (compatible; WindLoadCalculator/1.0)",
         "Accept": "text/html,application/xhtml+xml",
         "Accept-Language": "en-US,en;q=0.9",
-        "Referer": "https://codes.iccsafe.org/",
     }
     r = requests.get(url, headers=headers, timeout=timeout_s)
     r.raise_for_status()
     return r.text
 
 
-def _state_slug(state_name: str) -> str:
-    # Matches ICC slugs like "district-of-columbia"
+def _state_slug_for_adoptions(state_name: str) -> str:
+    # ICC advocacy adoption map uses lowercase + hyphens (works for most states)
     return state_name.strip().lower().replace(" ", "-")
 
 
-def _extract_code_year_from_visible_text(html: str, code_name: str) -> Optional[int]:
-    soup = BeautifulSoup(html, "html.parser")
-    text = soup.get_text(" ", strip=True)
+def _extract_year_near(text: str, anchors: List[str], window: int = 250) -> Optional[int]:
+    """
+    Finds the most recent (max) year within a window around any anchor phrase.
+    """
+    years: List[int] = []
+    for anchor in anchors:
+        for m in re.finditer(re.escape(anchor), text, flags=re.IGNORECASE):
+            s = max(0, m.start() - window)
+            e = min(len(text), m.end() + window)
+            snippet = text[s:e]
+            hits = re.findall(r"\b(19\d{2}|20\d{2})\b", snippet)
+            years.extend(int(y) for y in hits)
 
-    candidates: list[int] = []
-    for m in re.finditer(re.escape(code_name), text, flags=re.IGNORECASE):
-        start = max(0, m.start() - 200)
-        end = min(len(text), m.end() + 200)
-        snippet = text[start:end]
-        years = re.findall(r"\b(19\d{2}|20\d{2})\b", snippet)
-        candidates.extend(int(y) for y in years)
-
-    candidates = [y for y in candidates if 1990 <= y <= 2099]
-    return max(candidates) if candidates else None
+    years = [y for y in years if 1990 <= y <= 2099]
+    return max(years) if years else None
 
 
-def lookup_icc_state_adoption(state_abbr: str, debug_ui: bool = False) -> CodeAdoptionResult:
+def lookup_state_ibc_iecc_from_iccsafe_adoptions(state_abbr: str, debug: bool = False) -> AdoptionYears:
     abbr = (state_abbr or "").strip().upper()
     if abbr not in STATE_ABBR_TO_NAME:
         raise ValueError(f"Unknown state abbreviation: {abbr}")
 
     state_name = STATE_ABBR_TO_NAME[abbr]
-    slug = _state_slug(state_name)
+    slug = _state_slug_for_adoptions(state_name)
 
-    # ✅ FIXED URL
-    state_url = ICC_STATE_URL_TEMPLATE.format(slug=slug)
+    # ✅ Server-rendered adoption page (example exists for Illinois).  :contentReference[oaicite:1]{index=1}
+    url = f"https://www.iccsafe.org/advocacy/adoptions-map/{slug}/"
 
-    html = _http_get(state_url)
+    html = _http_get(url)
+    soup = BeautifulSoup(html, "html.parser")
+    text = soup.get_text(" ", strip=True)
 
-    if debug_ui:
-        with st.expander("🔎 ICC HTML debug"):
-            st.write("State URL:", state_url)
+    if debug:
+        with st.expander("🔎 Adoption page debug"):
+            st.write("URL:", url)
             st.write("HTML length:", len(html))
-            st.write("Contains 'International Building Code'?", "International Building Code" in html)
-            st.write("Contains 'International Energy Conservation Code'?", "International Energy Conservation Code" in html)
-            st.code(html[:1500])
+            st.write("Contains 'IECC'?", "IECC" in text)
+            st.write("Contains 'IBC'?", "IBC" in text)
+            st.code(text[:1200])
 
-    ibc_year = _extract_code_year_from_visible_text(html, "International Building Code")
-    iecc_year = _extract_code_year_from_visible_text(html, "International Energy Conservation Code")
+    # These anchors match how ICC commonly writes it on the adoption pages (e.g., “2018 IECC”, “2015 IBC”). :contentReference[oaicite:2]{index=2}
+    ibc_year = _extract_year_near(text, anchors=[" IBC", "International Building Code"], window=180)
+    iecc_year = _extract_year_near(text, anchors=[" IECC", "International Energy Conservation Code"], window=180)
 
-    return CodeAdoptionResult(
-        state_abbr=abbr,
-        state_name=state_name,
-        state_url=state_url,
+    return AdoptionYears(
         ibc_year=ibc_year,
         iecc_year=iecc_year,
+        source_url=url,
+        state_name=state_name,
     )
 
 
-def code_jurisdiction_1() -> Dict[str, Any]:
+def code_jurisdiction_1() -> Dict[str, object]:
     st.header("3️⃣ Code Jurisdiction / Project Location")
 
     city = st.text_input("City", value="Milwaukee")
 
+    # --- State dropdown ---
     state_labels = [f"{abbr} – {name}" for abbr, name in STATE_OPTIONS]
     default_index = [abbr for abbr, _ in STATE_OPTIONS].index("WI")
     state_choice = st.selectbox("State", options=state_labels, index=default_index)
     state_abbr = state_choice.split("–")[0].strip()
 
-    ibc_year = None
-    iecc_year = None
-    source_url = None
-    err = None
+    ibc_year: Optional[int] = None
+    iecc_year: Optional[int] = None
+    source_url: Optional[str] = None
+    err: Optional[str] = None
 
     try:
-        res = lookup_icc_state_adoption(state_abbr, debug_ui=True)  # set to False once stable
+        res = lookup_state_ibc_iecc_from_iccsafe_adoptions(state_abbr, debug=True)
         ibc_year = res.ibc_year
         iecc_year = res.iecc_year
-        source_url = res.state_url
-        st.success("ICC state page found.")
+        source_url = res.source_url
+        st.success("ICC adoption page found (server-rendered).")
         st.caption(f"Source: {source_url}")
     except Exception as e:
         err = str(e)
-        st.warning("ICC lookup failed — enter years manually.")
+        st.warning("Auto-lookup failed — enter years manually.")
         with st.expander("Show lookup error"):
             st.code(err)
 
