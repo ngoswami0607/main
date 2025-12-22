@@ -9,6 +9,32 @@ import requests
 from bs4 import BeautifulSoup
 import streamlit as st
 
+def debug_icc_raw_html(url: str) -> None:
+    headers = {
+        "User-Agent": "Mozilla/5.0 (compatible; WindLoadCalculator/1.0)",
+        "Accept": "text/html,application/xhtml+xml",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Referer": "https://codes.iccsafe.org/",
+    }
+    html = requests.get(url, headers=headers, timeout=25).text
+
+    st.write("### ICC Raw HTML Debug")
+    st.write("HTML length:", len(html))
+
+    probes = [
+        "International Building Code",
+        "International Energy Conservation Code",
+        "(IBC)",
+        "(IECC)",
+        "__NEXT_DATA__",
+        "__NUXT__",
+        "pageProps",
+    ]
+    for p in probes:
+        st.write(f"`{p}` present?", p in html)
+
+    # show small snippet for sanity
+    st.code(html[:1500])
 
 ICC_STATE_URL_TEMPLATE = "https://codes.iccsafe.org/codes/united-states/{slug}"
 
