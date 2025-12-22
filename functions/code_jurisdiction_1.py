@@ -83,7 +83,7 @@ def _http_get_json(url: str, timeout_s: int = 25) -> Dict[str, Any]:
     return r.json()
 
 """
-def _extract_build_id(html: str) -> Optional[str]:
+def _extract_next_build_id(html: str) -> Optional[str]:
     # Next.js build id typically appears in:
     # /_next/static/<BUILD_ID>/_buildManifest.js
     m = re.search(r"/_next/static/([^/]+)/_buildManifest\.js", html)
@@ -165,7 +165,7 @@ def lookup_icc_state_adoption(state_abbr: str, debug_ui: bool = False) -> CodeAd
     state_url = STATE_PAGE_TEMPLATE.format(slug=slug)
 
     html = _http_get(state_url)
-    build_id = _extract_build_id(html)
+    build_id = _extract_next_build_id(html)
 
     if debug_ui:
         with st.expander("🔎 ICC debug (HTML + build id)"):
