@@ -87,7 +87,7 @@ def lookup_state_ibc_iecc_from_iccsafe_adoptions(state_abbr: str, debug: bool = 
     html = _http_get(url)
     soup = BeautifulSoup(html, "html.parser")
     text = soup.get_text(" ", strip=True)
-
+"""
     if debug:
         with st.expander("🔎 Adoption page debug"):
             st.write("URL:", url)
@@ -95,7 +95,7 @@ def lookup_state_ibc_iecc_from_iccsafe_adoptions(state_abbr: str, debug: bool = 
             st.write("Contains 'IECC'?", "IECC" in text)
             st.write("Contains 'IBC'?", "IBC" in text)
             st.code(text[:1200])
-
+"""
     # These anchors match how ICC commonly writes it on the adoption pages (e.g., “2018 IECC”, “2015 IBC”). :contentReference[oaicite:2]{index=2}
     ibc_year = _extract_year_near(text, anchors=[" IBC", "International Building Code"], window=180)
     iecc_year = _extract_year_near(text, anchors=[" IECC", "International Energy Conservation Code"], window=180)
@@ -129,7 +129,6 @@ def code_jurisdiction_1() -> Dict[str, object]:
         ibc_year = res.ibc_year
         iecc_year = res.iecc_year
         source_url = res.source_url
-        st.success("ICC adoption page found (server-rendered).")
         st.caption(f"Source: {source_url}")
     except Exception as e:
         err = str(e)
