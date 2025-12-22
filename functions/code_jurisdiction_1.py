@@ -108,10 +108,9 @@ def _walk(obj: Any):
 
 """
 def _extract_year_from_title_string(s: str) -> Optional[int]:
-    """
     Extract a 4-digit year from strings like:
       '2021 International Building Code (IBC)'
-    """
+   
     m = re.search(r"\b(19\d{2}|20\d{2})\b", s)
     return int(m.group(1)) if m else None
 """
