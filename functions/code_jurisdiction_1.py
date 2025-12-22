@@ -7,7 +7,7 @@ from typing import Optional, Dict
 import requests
 from bs4 import BeautifulSoup
 import streamlit as st
-st.sidebar.write("✅ Loaded:", os.path.abspath(__file__))
+#st.sidebar.write("✅ Loaded:", os.path.abspath(__file__))
 
 
 ICC_US_CODES_URL = "https://codes.iccsafe.org/codes/united-states"
