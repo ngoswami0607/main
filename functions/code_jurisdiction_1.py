@@ -1,116 +1,149 @@
 from __future__ import annotations
-import os
-from typing import Optional
 
-try:
-    import streamlit as st
-except Exception:
-    st = None  # type: ignore
+import re
+from dataclasses import dataclass
+from typing import Optional, Dict, Tuple
 
-from openai import OpenAI
+import requests
+from bs4 import BeautifulSoup
 
-# --- Helper: read API key ---
-def _read_openai_api_key() -> Optional[str]:
-    """Read OpenAI API key from Streamlit secrets or environment."""
-    if st is not None and hasattr(st, "secrets"):
-        try:
-            key = st.secrets.get("OPENAI_API_KEY")
-            if key:
-                return key
-        except Exception:
-            pass
-    return os.environ.get("OPENAI_API_KEY")
 
-# --- Helper: build OpenAI client ---
-if st is not None:
-    @st.cache_resource(show_spinner=False)
-    def _build_openai_client() -> OpenAI:
-        api_key = _read_openai_api_key()
-        if not api_key:
-            raise RuntimeError(
-                "Missing OPENAI_API_KEY. Add it in Streamlit Secrets (Cloud) or your environment (local)."
-            )
-        return OpenAI(api_key=api_key)
-else:
-    _CLIENT_SINGLETON: Optional[OpenAI] = None
+ICC_US_CODES_URL = "https://codes.iccsafe.org/codes/united-states"
 
-    def _build_openai_client() -> OpenAI:
-        global _CLIENT_SINGLETON
-        if _CLIENT_SINGLETON is None:
-            api_key = _read_openai_api_key()
-            if not api_key:
-                raise RuntimeError("Missing OPENAI_API_KEY. Set it as an environment variable.")
-            _CLIENT_SINGLETON = OpenAI(api_key=api_key)
-        return _CLIENT_SINGLETON
+STATE_ABBR_TO_NAME: Dict[str, str] = {
+    "AL": "Alabama", "AK": "Alaska", "AZ": "Arizona", "AR": "Arkansas", "CA": "California",
+    "CO": "Colorado", "CT": "Connecticut", "DE": "Delaware", "DC": "District of Columbia",
+    "FL": "Florida", "GA": "Georgia", "HI": "Hawaii", "ID": "Idaho", "IL": "Illinois",
+    "IN": "Indiana", "IA": "Iowa", "KS": "Kansas", "KY": "Kentucky", "LA": "Louisiana",
+    "ME": "Maine", "MD": "Maryland", "MA": "Massachusetts", "MI": "Michigan", "MN": "Minnesota",
+    "MS": "Mississippi", "MO": "Missouri", "MT": "Montana", "NE": "Nebraska", "NV": "Nevada",
+    "NH": "New Hampshire", "NJ": "New Jersey", "NM": "New Mexico", "NY": "New York",
+    "NC": "North Carolina", "ND": "North Dakota", "OH": "Ohio", "OK": "Oklahoma",
+    "OR": "Oregon", "PA": "Pennsylvania", "RI": "Rhode Island", "SC": "South Carolina",
+    "SD": "South Dakota", "TN": "Tennessee", "TX": "Texas", "UT": "Utah", "VT": "Vermont",
+    "VA": "Virginia", "WA": "Washington", "WV": "West Virginia", "WI": "Wisconsin",
+    "WY": "Wyoming",
+}
 
-def get_openai_client() -> OpenAI:
-    """Return an initialized OpenAI client."""
-    return _build_openai_client()
 
-class _LazyClient:
-    """Lazy proxy that initializes the OpenAI client only when used."""
-    __slots__ = ("_client",)
+@dataclass
+class CodeAdoptionResult:
+    state_name: str
+    state_url: str
+    ibc_year: Optional[int]
+    iecc_year: Optional[int]
 
-    def __init__(self):
-        self._client: Optional[OpenAI] = None
 
-    def _ensure(self):
-        if self._client is None:
-            self._client = _build_openai_client()
+def _http_get(url: str, timeout_s: int = 15) -> str:
+    headers = {
+        "User-Agent": "Mozilla/5.0 (compatible; WindLoadCalculator/1.0)",
+        "Accept": "text/html,application/xhtml+xml",
+    }
+    resp = requests.get(url, headers=headers, timeout=timeout_s)
+    resp.raise_for_status()
+    return resp.text
 
-    def __getattr__(self, name):
-        self._ensure()
-        return getattr(self._client, name)
 
-client = _LazyClient()
+def _normalize_state(state_input: str) -> str:
+    s = (state_input or "").strip()
+    if not s:
+        raise ValueError("State is required (name or 2-letter abbreviation).")
 
-# --- Streamlit functional block ---
-def code_jurisdiction_1():
+    s_up = s.upper()
+    if len(s_up) == 2 and s_up in STATE_ABBR_TO_NAME:
+        return STATE_ABBR_TO_NAME[s_up]
+
+    # Title-case normalization for common cases
+    return s.title()
+
+
+def _build_state_link_map(us_codes_html: str) -> Dict[str, str]:
     """
-    Step in the Wind Load Calculator: determine jurisdiction and code reference.
-    Lets user input location, and optionally uses OpenAI to infer governing code version.
+    Parses the ICC US codes landing page and builds:
+    { "Wisconsin": "https://codes.iccsafe.org/codes/wisconsin", ... }
     """
-    if st is None:
-        raise RuntimeError("Streamlit is required to run this function.")
+    soup = BeautifulSoup(us_codes_html, "html.parser")
+    links = {}
 
-    st.subheader("3️⃣🏛️ Code Jurisdiction / Project Location")
+    for a in soup.find_all("a", href=True):
+        href = a["href"].strip()
+        text = (a.get_text() or "").strip()
 
-    location = st.text_input("Enter the project location (City, State):", "")
+        # ICC uses absolute/relative links; we normalize to absolute
+        if href.startswith("/codes/") and text:
+            abs_url = "https://codes.iccsafe.org" + href
+            # Many links exist; we only want state names likely on the page
+            # Example text: "Wisconsin"
+            if re.fullmatch(r"[A-Za-z .'-]{3,}", text):
+                links[text.title()] = abs_url
 
-    ai_enabled = _read_openai_api_key() is not None
-    jurisdiction = ""
+    return links
 
-    if location:
-        if ai_enabled:
-            with st.spinner("Determining applicable code jurisdiction..."):
-                try:
-                    client = get_openai_client()
-                    prompt = (
-                        f"The project is located in {location}. "
-                        "Based on U.S. code adoption trends, identify the most likely "
-                        "applicable building code and ASCE 7 wind load reference version "
-                        "(e.g., IBC 2021 with ASCE 7-16). "
-                        "Respond concisely."
-                    )
 
-                    response = client.responses.create(
-                        model="gpt-4o-mini",
-                        input=prompt,
-                    )
-                    jurisdiction = response.output_text.strip()
-                    st.success(f"Most likely code jurisdiction: **{jurisdiction}**")
+def _extract_code_year(page_text: str, code_name: str) -> Optional[int]:
+    """
+    Try to find a 4-digit year near the code name.
+    Works best when the page contains strings like:
+    "International Building Code (2021)" or "International Energy Conservation Code 2018"
+    """
+    # windowed search: find code name occurrences and scan nearby text for a year
+    candidates = []
+    for m in re.finditer(re.escape(code_name), page_text, flags=re.IGNORECASE):
+        start = max(0, m.start() - 120)
+        end = min(len(page_text), m.end() + 120)
+        snippet = page_text[start:end]
+        years = re.findall(r"\b(19\d{2}|20\d{2})\b", snippet)
+        candidates.extend([int(y) for y in years])
 
-                except Exception as e:
-                    st.warning(
-                        f"OpenAI lookup failed ({e}). Please enter code manually below."
-                    )
-                    ai_enabled = False
+    # Prefer most recent plausible year
+    if candidates:
+        candidates = [y for y in candidates if 1990 <= y <= 2099]
+        return max(candidates) if candidates else None
+    return None
+
+
+def lookup_icc_state_adoption(state: str) -> CodeAdoptionResult:
+    """
+    Given a state name or abbreviation, find the ICC state page and extract IBC/IECC years.
+    """
+    state_name = _normalize_state(state)
+
+    us_html = _http_get(ICC_US_CODES_URL)
+    state_links = _build_state_link_map(us_html)
+
+    if state_name not in state_links:
+        # fallback: try loose match
+        matches = [k for k in state_links.keys() if k.lower() == state_name.lower()]
+        if matches:
+            state_name = matches[0]
         else:
-            st.info("No OpenAI key detected — please enter jurisdiction manually.")
+            raise ValueError(f"Could not find '{state_name}' on ICC US codes page.")
 
-    if not ai_enabled:
-        jurisdiction = st.text_input(
-            "Enter code jurisdiction manually (e.g., IBC 2021 / ASCE 7-16):", jurisdiction
-        )
+    state_url = state_links[state_name]
+    state_html = _http_get(state_url)
 
-    return jurisdiction or location
+    # Extract years (best-effort)
+    ibc_year = _extract_code_year(state_html, "International Building Code")
+    iecc_year = _extract_code_year(state_html, "International Energy Conservation Code")
+
+    return CodeAdoptionResult(
+        state_name=state_name,
+        state_url=state_url,
+        ibc_year=ibc_year,
+        iecc_year=iecc_year,
+    )
+
+
+# =========================
+# Streamlit wrapper (call from your code_jurisdiction_1 step)
+# =========================
+def code_jurisdiction_icc(city: str, state: str) -> Tuple[Optional[int], Optional[int], Optional[str]]:
+    """
+    Returns (ibc_year, iecc_year, state_url) with graceful failures.
+    City is accepted for UI completeness but not used in ICC lookup (state-level).
+    """
+    try:
+        res = lookup_icc_state_adoption(state)
+        return res.ibc_year, res.iecc_year, res.state_url
+    except Exception:
+        return None, None, None
