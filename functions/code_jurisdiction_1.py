@@ -8,6 +8,38 @@ import requests
 from bs4 import BeautifulSoup
 
 
+st.header("3️⃣ Code Jurisdiction / Project Location")
+    city = st.text_input("Enter project city:", value="Milwaukee")
+    state = st.text_input("Enter project state (name or 2-letter):", value="WI")
+
+    ibc_year, iecc_year, state_url = code_jurisdiction_icc(city, state)
+
+    if ibc_year or iecc_year:
+        st.success("ICC state adoption lookup successful.")
+        if state_url:
+            st.caption(f"Source: {state_url}")
+
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric("IBC Year (State)", str(ibc_year) if ibc_year else "Not found")
+        with col2:
+            st.metric("IECC Year (State)", str(iecc_year) if iecc_year else "Not found")
+    else:
+        st.warning("Could not auto-detect from ICC. Please enter manually below.")
+
+    # Manual fallback
+    ibc_manual = st.text_input("IBC year (manual override):", value=str(ibc_year) if ibc_year else "")
+    iecc_manual = st.text_input("IECC year (manual override):", value=str(iecc_year) if iecc_year else "")
+
+    st.markdown("---")
+    return {
+        "city": city,
+        "state": state,
+        "ibc_year": int(ibc_manual) if ibc_manual.isdigit() else ibc_year,
+        "iecc_year": int(iecc_manual) if iecc_manual.isdigit() else iecc_year,
+        "source_url": state_url,
+    }
+
 ICC_US_CODES_URL = "https://codes.iccsafe.org/codes/united-states"
 
 STATE_ABBR_TO_NAME: Dict[str, str] = {
