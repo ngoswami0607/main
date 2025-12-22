@@ -1,12 +1,3 @@
-# ✅ Why your current “debugging” shows NOT FOUND
-# Your debug is correct — it proves the problem:
-# - The HTML you get from `requests.get()` is a JS shell (no code titles in the HTML)
-# - No "__NEXT_DATA__" script tag is present
-# - So searching raw HTML for “International Building Code” will always return False
-#
-# ✅ Fix: ICC is a Next.js site. The data is usually available at:
-#   https://codes.iccsafe.org/_next/data/<BUILD_ID>/codes/united-states/<state-slug>.json
-#
 # Plan:
 # 1) GET the state page HTML
 # 2) Extract BUILD_ID from "/_next/static/<BUILD_ID>/_buildManifest.js"
@@ -91,12 +82,52 @@ def _http_get_json(url: str, timeout_s: int = 25) -> Dict[str, Any]:
     r.raise_for_status()
     return r.json()
 
-
+"""
 def _extract_build_id(html: str) -> Optional[str]:
     # Next.js build id typically appears in:
     # /_next/static/<BUILD_ID>/_buildManifest.js
     m = re.search(r"/_next/static/([^/]+)/_buildManifest\.js", html)
     return m.group(1) if m else None
+"""
+
+
+def extract_next_build_id(html: str, debug: bool = False) -> str | None:
+    patterns = [
+        # Pattern A: direct buildId JSON fragment
+        r'"buildId"\s*:\s*"([^"]+)"',
+        # Pattern B: next static assets (general)
+        r'/_next/static/([^/]+)/',
+        # Pattern C: next data paths (general)
+        r'/_next/data/([^/]+)/',
+        # Pattern D: build manifest specifically (older structure)
+        r'/_next/static/([^/]+)/_buildManifest\.js',
+    ]
+
+    candidates: list[str] = []
+
+    for pat in patterns:
+        hits = re.findall(pat, html)
+        if hits:
+            # normalize hits (some patterns return many)
+            candidates.extend(hits if isinstance(hits, list) else [hits])
+
+    # de-dupe preserving order
+    seen = set()
+    uniq = []
+    for c in candidates:
+        if c not in seen:
+            seen.add(c)
+            uniq.append(c)
+
+    if debug:
+        with st.expander("🧩 Next.js Build-ID extraction debug"):
+            st.write("HTML length:", len(html))
+            st.write("Candidate build ids found:", uniq if uniq else "❌ none")
+            # show a tiny slice to confirm you’re not getting blocked
+            st.code(html[:1200])
+
+    # Heuristic: choose the FIRST candidate (usually correct). If you want, pick the most frequent.
+    return uniq[0] if uniq else None
 
 
 def _walk_strings(obj: Any):
