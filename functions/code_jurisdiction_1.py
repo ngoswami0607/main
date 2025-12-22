@@ -110,6 +110,65 @@ def _walk(obj: Any):
             yield from _walk(v)
 
 
+def extract_ibc_iecc_years_from_html(html: str) -> Dict[str, Optional[int]]:
+    def year_from_text(pattern: str, s: str) -> Optional[int]:
+        m = re.search(pattern, s, flags=re.IGNORECASE)
+        return int(m.group(1)) if m else None
+
+    # 1) Direct regex on raw html (works if titles are present anywhere)
+    ibc = year_from_text(r"\b(19\d{2}|20\d{2})\b\s+International\s+Building\s+Code\s*\(IBC\)", html)
+    iecc = year_from_text(r"\b(19\d{2}|20\d{2})\b\s+International\s+Energy\s+Conservation\s+Code\s*\(IECC\)", html)
+    if ibc or iecc:
+        return {"ibc_year": ibc, "iecc_year": iecc}
+
+    soup = BeautifulSoup(html, "html.parser")
+
+    # 2) __NEXT_DATA__ (Next.js)
+    tag = soup.find("script", id="__NEXT_DATA__")
+    if tag and tag.string:
+        try:
+            data = json.loads(tag.string)
+            text_blob = json.dumps(data)
+            ibc = year_from_text(r"\b(19\d{2}|20\d{2})\b[^0-9]{0,30}International Building Code", text_blob)
+            iecc = year_from_text(r"\b(19\d{2}|20\d{2})\b[^0-9]{0,30}International Energy Conservation Code", text_blob)
+            return {"ibc_year": ibc, "iecc_year": iecc}
+        except Exception:
+            pass
+
+    # 3) Nuxt / other initial state blobs (rare)
+    for script in soup.find_all("script"):
+        s = script.string
+        if not s:
+            continue
+        if "__NUXT__" in s or "INITIAL_STATE" in s or "pageProps" in s:
+            ibc = year_from_text(r"\b(19\d{2}|20\d{2})\b[^0-9]{0,50}International Building Code", s)
+            iecc = year_from_text(r"\b(19\d{2}|20\d{2})\b[^0-9]{0,50}International Energy Conservation Code", s)
+            if ibc or iecc:
+                return {"ibc_year": ibc, "iecc_year": iecc}
+
+    # 4) Visible text fallback (often empty for JS-rendered pages)
+    visible = soup.get_text(" ", strip=True)
+    ibc = year_from_text(r"\b(19\d{2}|20\d{2})\b\s+International\s+Building\s+Code", visible)
+    iecc = year_from_text(r"\b(19\d{2}|20\d{2})\b\s+International\s+Energy\s+Conservation\s+Code", visible)
+
+    return {"ibc_year": ibc, "iecc_year": iecc}
+
+
+def lookup_years_state_page(url: str) -> Dict[str, Optional[int]]:
+    headers = {
+        "User-Agent": "Mozilla/5.0 (compatible; WindLoadCalculator/1.0)",
+        "Accept": "text/html,application/xhtml+xml",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Referer": "https://codes.iccsafe.org/",
+    }
+    r = requests.get(url, headers=headers, timeout=25)
+    r.raise_for_status()
+    return extract_ibc_iecc_years_from_html(r.text)
+
+
+
+
+"""
 def _extract_year_from_title_string(s: str) -> Optional[int]:
     """
     Extract a 4-digit year from strings like:
@@ -117,7 +176,7 @@ def _extract_year_from_title_string(s: str) -> Optional[int]:
     """
     m = re.search(r"\b(19\d{2}|20\d{2})\b", s)
     return int(m.group(1)) if m else None
-
+"""
 
 def _extract_years_from_next_data(next_data: Dict[str, Any]) -> Dict[str, Optional[int]]:
     """
