@@ -133,17 +133,3 @@ def lookup_icc_state_adoption(state: str) -> CodeAdoptionResult:
         iecc_year=iecc_year,
     )
 
-
-# =========================
-# Streamlit wrapper (call from your code_jurisdiction_1 step)
-# =========================
-def code_jurisdiction_icc(city: str, state: str) -> Tuple[Optional[int], Optional[int], Optional[str]]:
-    """
-    Returns (ibc_year, iecc_year, state_url) with graceful failures.
-    City is accepted for UI completeness but not used in ICC lookup (state-level).
-    """
-    try:
-        res = lookup_icc_state_adoption(state)
-        return res.ibc_year, res.iecc_year, res.state_url
-    except Exception:
-        return None, None, None
