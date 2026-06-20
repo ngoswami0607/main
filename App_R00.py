@@ -10,6 +10,7 @@ from functions.risk_category import risk_category
 from functions.wind_speed import wind_speed
 from functions.wind_pressure_calc import wind_pressure_calc
 from functions.roof_type_picker import roof_type_picker
+from functions.h_less_than_60ft import show_h_less_than_60ft
 
 authenticate_user()
 
@@ -37,4 +38,9 @@ V = wind_speed()
 
 # Step 6
 exposure, Kz, q = wind_pressure_calc(height, V)
+
+# Step 7
+if height <= 60:
+    show_h_less_than_60ft(height)
+
 
