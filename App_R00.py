@@ -16,7 +16,7 @@ authenticate_user()
 # print(os.listdir("functions"))
 
 st.set_page_config(page_title="Wind Load Calculator", layout="centered")
-st.title("🌪️ Wind Load Calculator (ASCE 7)")
+st.title("Wind Load Calculator (ASCE 7)")
 st.markdown("This calculator helps you organize inputs for **ASCE 7 wind load determination**.")
 st.markdown("---")
 
