@@ -2,87 +2,74 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 
-# Effective wind areas requested
-areas = [10, 20, 50, 100, 200, 500, 1000]
 
-# Approximate ASCE 7 C&C GCp values digitized from the figures
-# Verify against your actual ASCE 7 figure/table before final design use.
+def show_h_less_than_60ft(mean_roof_height):
+    if mean_roof_height >= 60:
+        return
 
-wall_data = {
-    "Area (sf)": areas,
-    "Wall Zone 4 Negative": [-1.1, -1.1, -1.0, -0.95, -0.90, -0.80, -0.80],
-    "Wall Zone 5 Negative": [-1.4, -1.4, -1.25, -1.10, -1.00, -0.80, -0.80],
-    "Wall Zone 4 & 5 Positive": [1.0, 1.0, 0.95, 0.90, 0.80, 0.70, 0.70],
-}
+    st.markdown("### ASCE 7-16 GCp Figures for h < 60 ft")
 
-roof_data = {
-    "Area (sf)": areas,
-    "Roof Zone 1 Negative": [-1.6, -1.6, -1.45, -1.35, -1.25, -1.0, -1.0],
-    "Roof Zone 2 Negative": [-2.3, -2.3, -2.1, -1.9, -1.7, -1.4, -1.4],
-    "Roof Zone 3 Negative": [-3.2, -3.2, -2.7, -2.4, -2.1, -1.4, -1.4],
-    "Roof Zone 1 Positive": [0.9, 0.9, 0.85, 0.75, 0.60, 0.40, 0.40],
-    "Roof Zones 1,2,3 Positive": [0.2, 0.2, 0.2, 0.25, 0.25, 0.25, 0.25],
-}
+    tab1, tab2 = st.tabs(["Wall GCp", "Roof GCp"])
 
-wall_df = pd.DataFrame(wall_data)
-roof_df = pd.DataFrame(roof_data)
+    areas = [10, 20, 50, 100, 200, 500, 1000]
 
-st.title("External Pressure Coefficient, GCp")
+    wall_df = pd.DataFrame({
+        "Area (sf)": areas,
+        "Wall Zone 4 Negative": [-1.1, -1.1, -1.0, -0.95, -0.90, -0.80, -0.80],
+        "Wall Zone 5 Negative": [-1.4, -1.4, -1.25, -1.10, -1.00, -0.80, -0.80],
+        "Wall Zone 4 & 5 Positive": [1.0, 1.0, 0.95, 0.90, 0.80, 0.70, 0.70],
+    })
 
-selection = st.radio("Select Component", ["Walls", "Roof"])
+    roof_df = pd.DataFrame({
+        "Area (sf)": areas,
+        "Roof Zone 1 Negative": [-1.6, -1.6, -1.45, -1.35, -1.25, -1.0, -1.0],
+        "Roof Zone 2 Negative": [-2.3, -2.3, -2.1, -1.9, -1.7, -1.4, -1.4],
+        "Roof Zone 3 Negative": [-3.2, -3.2, -2.7, -2.4, -2.1, -1.4, -1.4],
+        "Roof Zone 1 Positive": [0.9, 0.9, 0.85, 0.75, 0.60, 0.40, 0.40],
+        "Roof Zones 1,2,3 Positive": [0.2, 0.2, 0.2, 0.25, 0.25, 0.25, 0.25],
+    })
 
-df = wall_df if selection == "Walls" else roof_df
+    def plot_gcp(df, title):
+        fig = go.Figure()
 
-st.subheader(f"{selection} GCp Table")
-st.dataframe(df, use_container_width=True)
+        for col in df.columns[1:]:
+            fig.add_trace(
+                go.Scatter(
+                    x=df["Area (sf)"],
+                    y=df[col],
+                    mode="lines+markers",
+                    name=col,
+                )
+            )
 
-fig = go.Figure()
+        for area in areas:
+            fig.add_vline(x=area, line_width=1, line_dash="dot", opacity=0.45)
 
-# Plot GCp curves
-for col in df.columns[1:]:
-    fig.add_trace(
-        go.Scatter(
-            x=df["Area (sf)"],
-            y=df[col],
-            mode="lines+markers",
-            name=col,
+        y_values = sorted(set(df.drop(columns=["Area (sf)"]).values.flatten()))
+        for y in y_values:
+            fig.add_hline(y=y, line_width=1, line_dash="dot", opacity=0.30)
+
+        fig.update_layout(
+            title=title,
+            xaxis_title="Effective Wind Area, A (sq. ft.)",
+            yaxis_title="External Pressure Coefficient, GCp",
+            xaxis=dict(
+                type="log",
+                tickvals=areas,
+                ticktext=[str(a) for a in areas],
+            ),
+            hovermode="x unified",
+            height=500,
         )
-    )
 
-# Add vertical guide lines
-for area in areas:
-    fig.add_vline(
-        x=area,
-        line_width=1,
-        line_dash="dot",
-        opacity=0.5,
-    )
+        return fig
 
-# Add horizontal guide lines
-y_values = sorted(set(df.drop(columns=["Area (sf)"]).values.flatten()))
-for y in y_values:
-    fig.add_hline(
-        y=y,
-        line_width=1,
-        line_dash="dot",
-        opacity=0.35,
-    )
+    with tab1:
+        st.image("Gcp Fiugures_image/Less than 60_wall.png", caption="ASCE 7-16 Wall GCp Figure")
+        st.dataframe(wall_df, use_container_width=True)
+        st.plotly_chart(plot_gcp(wall_df, "Wall External Pressure Coefficient, GCp"), use_container_width=True)
 
-fig.update_layout(
-    title=f"External Pressure Coefficient, GCp - {selection}",
-    xaxis_title="Effective Wind Area, A (sq. ft.)",
-    yaxis_title="GCp",
-    xaxis=dict(
-        type="log",
-        tickvals=areas,
-        ticktext=[str(a) for a in areas],
-    ),
-    yaxis=dict(
-        autorange="reversed" if selection == "Walls" else False,
-        zeroline=True,
-    ),
-    hovermode="x unified",
-    template="plotly_white",
-)
-
-st.plotly_chart(fig, use_container_width=True)
+    with tab2:
+        st.image("Gcp Fiugures_image/Less than 60_roof.png", caption="ASCE 7-16 Roof GCp Figure")
+        st.dataframe(roof_df, use_container_width=True)
+        st.plotly_chart(plot_gcp(roof_df, "Roof External Pressure Coefficient, GCp"), use_container_width=True)
