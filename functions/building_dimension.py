@@ -8,7 +8,7 @@ def building_dimension():
     - plots building
     - returns (least_width, longest_width, height)
     """
-    st.header("1️⃣ Building Dimensions")
+    st.header("Building Dimensions")
 
     c1, c2, c3 = st.columns(3)
     ns = c1.number_input("North–South (ft)", min_value=0.01, value=80.0, format="%.2f", key="bd_ns")
