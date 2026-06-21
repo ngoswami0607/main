@@ -113,7 +113,7 @@ def show_h_less_than_60ft(height):
         st.image(
             wall_image,
             caption="Wall GCp figure with selected effective wind area and GCp",
-            use_container_width=True,
+            width=700,
         )
 
         st.dataframe(wall_df, use_container_width=True)
@@ -165,7 +165,7 @@ def show_h_less_than_60ft(height):
         st.image(
             roof_image,
             caption="Roof GCp figure with selected effective wind area and GCp",
-            use_container_width=True,
+            width=700,
         )
 
         st.dataframe(roof_df, use_container_width=True)
