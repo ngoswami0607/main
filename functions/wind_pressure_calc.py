@@ -22,7 +22,7 @@ def _fixed_image(path: str, height_px: int = 140, border_radius_px: int = 12) ->
 
 
 def wind_pressure_calc(height, V):
-    st.header("6️⃣ Basic Wind Pressure Calculation (ASCE 7-16)")
+    st.header("Basic Wind Pressure Calculation (ASCE 7-16)")
 
     # --- Directionality Factor (Kd) ---
     structure_types = {
