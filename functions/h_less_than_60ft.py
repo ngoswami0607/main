@@ -36,7 +36,7 @@ def show_h_less_than_60ft(height):
     def interpolate_gcp(area, df, gcp_column):
         return np.interp(area, df["Area (sf)"], df[gcp_column])
 
-  def draw_wall_gcp_on_image(image_path, area, gcp):
+    def draw_wall_gcp_on_image(image_path, area, gcp):
     img = Image.open(image_path).convert("RGB")
     draw = ImageDraw.Draw(img)
 
@@ -116,15 +116,9 @@ def show_h_less_than_60ft(height):
 
         wall_gcp = interpolate_gcp(wall_area, wall_df, wall_case)
 
-        st.success(
-            f"{wall_case}: GCp = {wall_gcp:.2f} at A = {wall_area:.0f} sq. ft."
-        )
+        st.success(f"{wall_case}: GCp = {wall_gcp:.2f} at A = {wall_area:.0f} sq. ft.")
 
-    wall_image = draw_wall_gcp_on_image(
-    "Gcp Figures_image/Less than 60_wall.png",
-    wall_area,
-    wall_gcp
-)
+        wall_image = draw_wall_gcp_on_image("Gcp Figures_image/Less than 60_wall.png",wall_area,wall_gcp)
 
         st.image(
             wall_image,
