@@ -4,7 +4,7 @@ import streamlit as st
 def roof_type_picker(height_ft: float) -> dict:
     h = float(height_ft)
 
-    st.header("2️⃣ Roof Type")  # since you're inserting after Step 1
+    st.header("Roof Type")  # since you're inserting after Step 1
 
     roof_low_rise = [
         "Flat roof",
