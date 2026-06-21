@@ -1,18 +1,19 @@
-import streamlit as st
-import pandas as pd
-import plotly.graph_objects as go
-from PIL import Image, ImageDraw
-import numpy as np
 import math
+import numpy as np
+import pandas as pd
+import streamlit as st
+from PIL import Image, ImageDraw
 
 
-def show_h_less_than_60ft(mean_roof_height):
-    if mean_roof_height >= 60:
+def show_h_less_than_60ft(height):
+    """
+    Shows ASCE 7-16 GCp figures and values for buildings with mean roof height < 60 ft.
+    """
+
+    if height >= 60:
         return
 
-    st.markdown("### ASCE 7-16 GCp Figures for h < 60 ft")
-
-    tab1, tab2 = st.tabs(["Wall GCp", "Roof GCp"])
+    st.markdown("### ASCE 7-16 Components & Cladding GCp for h < 60 ft")
 
     areas = [10, 20, 50, 100, 200, 500, 1000]
 
@@ -32,91 +33,142 @@ def show_h_less_than_60ft(mean_roof_height):
         "Roof Zones 1,2,3 Positive": [0.2, 0.2, 0.2, 0.25, 0.25, 0.25, 0.25],
     })
 
-def interpolate_gcp(area, x_values, y_values):
-    return np.interp(area, x_values, y_values)
+    def interpolate_gcp(area, df, gcp_column):
+        return np.interp(area, df["Area (sf)"], df[gcp_column])
 
+    def draw_gcp_lines_on_image(
+        image_path,
+        area,
+        gcp,
+        plot_left,
+        plot_right,
+        plot_top,
+        plot_bottom,
+        x_min_area,
+        x_max_area,
+        y_min_gcp,
+        y_max_gcp,
+    ):
+        img = Image.open(image_path).convert("RGB")
+        draw = ImageDraw.Draw(img)
 
-def draw_wall_gcp_on_image(image_path, area, gcp):
-    img = Image.open(image_path).convert("RGB")
-    draw = ImageDraw.Draw(img)
+        x = plot_left + (
+            (math.log10(area) - math.log10(x_min_area))
+            / (math.log10(x_max_area) - math.log10(x_min_area))
+        ) * (plot_right - plot_left)
 
-    # Adjust these values if line is slightly off
-    plot_left = 175
-    plot_right = 545
-    plot_top = 55
-    plot_bottom = 275
+        y = plot_top + (
+            (gcp - y_max_gcp) / (y_min_gcp - y_max_gcp)
+        ) * (plot_bottom - plot_top)
 
-    x_min = math.log10(1)
-    x_max = math.log10(1000)
+        draw.line([(x, plot_top), (x, plot_bottom)], fill="red", width=3)
+        draw.line([(plot_left, y), (plot_right, y)], fill="blue", width=3)
 
-    y_min = -1.8
-    y_max = 1.2
+        r = 6
+        draw.ellipse((x - r, y - r, x + r, y + r), fill="black")
 
-    # Convert area to x-coordinate using log scale
-    x = plot_left + (math.log10(area) - x_min) / (x_max - x_min) * (plot_right - plot_left)
+        return img
 
-    # Convert GCp to y-coordinate
-    y = plot_top + (gcp - y_min) / (y_max - y_min) * (plot_bottom - plot_top)
+    tab1, tab2 = st.tabs(["Wall GCp", "Roof GCp"])
 
-    # Vertical line for effective wind area
-    draw.line([(x, plot_top), (x, plot_bottom)], fill="red", width=3)
+    with tab1:
+        st.markdown("#### Wall External Pressure Coefficient, GCp")
 
-    # Horizontal line for GCp
-    draw.line([(plot_left, y), (plot_right, y)], fill="blue", width=3)
+        wall_area = st.number_input(
+            "Effective Wind Area for Wall, A (sq. ft.)",
+            min_value=10.0,
+            max_value=1000.0,
+            value=10.0,
+            step=10.0,
+            key="wall_area_input",
+        )
 
-    # Point at intersection
-    r = 6
-    draw.ellipse((x-r, y-r, x+r, y+r), fill="black")
+        wall_case = st.selectbox(
+            "Select Wall Zone / Pressure Case",
+            [
+                "Wall Zone 4 Negative",
+                "Wall Zone 5 Negative",
+                "Wall Zone 4 & 5 Positive",
+            ],
+            key="wall_case_select",
+        )
 
-    return img
+        wall_gcp = interpolate_gcp(wall_area, wall_df, wall_case)
 
-with tab1:
-    st.markdown("#### Wall GCp")
+        st.success(
+            f"{wall_case}: GCp = {wall_gcp:.2f} at A = {wall_area:.0f} sq. ft."
+        )
 
-    area_input = st.number_input(
-        "Enter Effective Wind Area for Wall, A (sq. ft.)",
-        min_value=1.0,
-        max_value=1000.0,
-        value=10.0,
-        step=1.0
-    )
+        wall_image = draw_gcp_lines_on_image(
+            image_path="Gcp Figures_image/Less than 60_wall.png",
+            area=wall_area,
+            gcp=wall_gcp,
+            plot_left=180,
+            plot_right=545,
+            plot_top=55,
+            plot_bottom=280,
+            x_min_area=1,
+            x_max_area=1000,
+            y_min_gcp=1.2,
+            y_max_gcp=-1.8,
+        )
 
-    zone_choice = st.selectbox(
-        "Select Wall Zone / Pressure Case",
-        [
-            "Wall Zone 4 Negative",
-            "Wall Zone 5 Negative",
-            "Wall Zone 4 & 5 Positive"
-        ]
-    )
+        st.image(
+            wall_image,
+            caption="Wall GCp figure with selected effective wind area and GCp",
+            use_container_width=True,
+        )
 
-    areas = [10, 20, 50, 100, 200, 500, 1000]
+        st.dataframe(wall_df, use_container_width=True)
 
-    wall_df = pd.DataFrame({
-        "Area (sf)": areas,
-        "Wall Zone 4 Negative": [-1.1, -1.1, -1.0, -0.95, -0.90, -0.80, -0.80],
-        "Wall Zone 5 Negative": [-1.4, -1.4, -1.25, -1.10, -1.00, -0.80, -0.80],
-        "Wall Zone 4 & 5 Positive": [1.0, 1.0, 0.95, 0.90, 0.80, 0.70, 0.70],
-    })
+    with tab2:
+        st.markdown("#### Roof External Pressure Coefficient, GCp")
 
-    gcp_value = interpolate_gcp(
-        area_input,
-        wall_df["Area (sf)"],
-        wall_df[zone_choice]
-    )
+        roof_area = st.number_input(
+            "Effective Wind Area for Roof, A (sq. ft.)",
+            min_value=10.0,
+            max_value=1000.0,
+            value=10.0,
+            step=10.0,
+            key="roof_area_input",
+        )
 
-    st.success(f"GCp for {zone_choice} at A = {area_input:.0f} sq. ft. is {gcp_value:.2f}")
+        roof_case = st.selectbox(
+            "Select Roof Zone / Pressure Case",
+            [
+                "Roof Zone 1 Negative",
+                "Roof Zone 2 Negative",
+                "Roof Zone 3 Negative",
+                "Roof Zone 1 Positive",
+                "Roof Zones 1,2,3 Positive",
+            ],
+            key="roof_case_select",
+        )
 
-    annotated_wall = draw_wall_gcp_on_image(
-        "Gcp Figures_image/Less than 60_wall.png",
-        area_input,
-        gcp_value
-    )
+        roof_gcp = interpolate_gcp(roof_area, roof_df, roof_case)
 
-    st.image(
-        annotated_wall,
-        caption="Wall GCp figure with user-selected effective wind area and GCp line",
-        use_container_width=True
-    )
+        st.success(
+            f"{roof_case}: GCp = {roof_gcp:.2f} at A = {roof_area:.0f} sq. ft."
+        )
 
-    st.dataframe(wall_df, use_container_width=True)
+        roof_image = draw_gcp_lines_on_image(
+            image_path="Gcp Figures_image/Less than 60_roof.png",
+            area=roof_area,
+            gcp=roof_gcp,
+            plot_left=155,
+            plot_right=555,
+            plot_top=45,
+            plot_bottom=300,
+            x_min_area=1,
+            x_max_area=1000,
+            y_min_gcp=1.0,
+            y_max_gcp=-4.0,
+        )
+
+        st.image(
+            roof_image,
+            caption="Roof GCp figure with selected effective wind area and GCp",
+            use_container_width=True,
+        )
+
+        st.dataframe(roof_df, use_container_width=True)
