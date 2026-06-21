@@ -36,19 +36,40 @@ def show_h_less_than_60ft(height):
     def interpolate_gcp(area, df, gcp_column):
         return np.interp(area, df["Area (sf)"], df[gcp_column])
 
-    def draw_gcp_lines_on_image(
-        image_path,
-        area,
-        gcp,
-        plot_left,
-        plot_right,
-        plot_top,
-        plot_bottom,
-        x_min_area,
-        x_max_area,
-        y_min_gcp,
-        y_max_gcp,
-    ):
+  def draw_wall_gcp_on_image(image_path, area, gcp):
+    img = Image.open(image_path).convert("RGB")
+    draw = ImageDraw.Draw(img)
+
+    # Plot limits for wall figure
+    plot_left = 306
+    plot_right = 674
+    plot_top = 82
+    plot_bottom = 388
+
+    x_min_area = 1
+    x_max_area = 1000
+
+    y_top_gcp = -1.8
+    y_bottom_gcp = 1.2
+
+    x = plot_left + (
+        (math.log10(area) - math.log10(x_min_area))
+        / (math.log10(x_max_area) - math.log10(x_min_area))
+    ) * (plot_right - plot_left)
+
+    y = plot_top + (
+        (gcp - y_top_gcp)
+        / (y_bottom_gcp - y_top_gcp)
+    ) * (plot_bottom - plot_top)
+
+    draw.line([(x, plot_top), (x, plot_bottom)], fill="red", width=4)
+    draw.line([(plot_left, y), (plot_right, y)], fill="blue", width=4)
+
+    r = 7
+    draw.ellipse((x-r, y-r, x+r, y+r), fill="black")
+
+    return img
+      
         img = Image.open(image_path).convert("RGB")
         draw = ImageDraw.Draw(img)
 
@@ -99,19 +120,11 @@ def show_h_less_than_60ft(height):
             f"{wall_case}: GCp = {wall_gcp:.2f} at A = {wall_area:.0f} sq. ft."
         )
 
-        wall_image = draw_gcp_lines_on_image(
-            image_path="Gcp Figures_image/Less than 60_wall.png",
-            area=wall_area,
-            gcp=wall_gcp,
-            plot_left=180,
-            plot_right=545,
-            plot_top=55,
-            plot_bottom=280,
-            x_min_area=1,
-            x_max_area=1000,
-            y_min_gcp=1.2,
-            y_max_gcp=-1.8,
-        )
+    wall_image = draw_wall_gcp_on_image(
+    "Gcp Figures_image/Less than 60_wall.png",
+    wall_area,
+    wall_gcp
+)
 
         st.image(
             wall_image,
