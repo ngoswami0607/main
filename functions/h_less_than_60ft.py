@@ -36,37 +36,30 @@ def show_h_less_than_60ft(height):
     def interpolate_gcp(area, df, gcp_column):
         return np.interp(area, df["Area (sf)"], df[gcp_column])
 
-def draw_wall_gcp_on_image(image_path, area, gcp):
-    img = Image.open(image_path).convert("RGB")
-    draw = ImageDraw.Draw(img)
+    def draw_wall_gcp_on_image(image_path, area, gcp):
+        img = Image.open(image_path).convert("RGB")
+        draw = ImageDraw.Draw(img)
 
-    # Plot limits for wall figure
-    plot_left = 306
-    plot_right = 674
-    plot_top = 82
-    plot_bottom = 388
+        # Plot limits for wall figure
+        plot_left = 306
+        plot_right = 674
+        plot_top = 82
+        plot_bottom = 388
 
-    x_min_area = 1
-    x_max_area = 1000
+        x_min_area = 1
+        x_max_area = 1000
 
-    y_top_gcp = -1.8
-    y_bottom_gcp = 1.2
+        y_top_gcp = -1.8
+        y_bottom_gcp = 1.2
 
-    x = plot_left + (
-        (math.log10(area) - math.log10(x_min_area))
-        / (math.log10(x_max_area) - math.log10(x_min_area))
-    ) * (plot_right - plot_left)
+        x = plot_left + ((math.log10(area) - math.log10(x_min_area))/(math.log10(x_max_area) - math.log10(x_min_area))) * (plot_right - plot_left)
+        y = plot_top + ((gcp - y_top_gcp)/(y_bottom_gcp - y_top_gcp)) * (plot_bottom - plot_top)
 
-    y = plot_top + (
-        (gcp - y_top_gcp)
-        / (y_bottom_gcp - y_top_gcp)
-    ) * (plot_bottom - plot_top)
+        draw.line([(x, plot_top), (x, plot_bottom)], fill="red", width=4)
+        draw.line([(plot_left, y), (plot_right, y)], fill="blue", width=4)
 
-    draw.line([(x, plot_top), (x, plot_bottom)], fill="red", width=4)
-    draw.line([(plot_left, y), (plot_right, y)], fill="blue", width=4)
-
-    r = 7
-    draw.ellipse((x-r, y-r, x+r, y+r), fill="black")
+        r = 7
+        draw.ellipse((x-r, y-r, x+r, y+r), fill="black")
 
     return img
       
