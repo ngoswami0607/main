@@ -65,11 +65,11 @@ def show_h_less_than_60ft(mean_roof_height):
         return fig
 
     with tab1:
-        st.image("Gcp Fiugures_image/Less than 60_wall.png", caption="ASCE 7-16 Wall GCp Figure")
+        st.image("Gcp Figures_image/Less than 60_wall.png", caption="ASCE 7-16 Wall GCp Figure")
         st.dataframe(wall_df, use_container_width=True)
         st.plotly_chart(plot_gcp(wall_df, "Wall External Pressure Coefficient, GCp"), use_container_width=True)
 
     with tab2:
-        st.image("Gcp Fiugures_image/Less than 60_roof.png", caption="ASCE 7-16 Roof GCp Figure")
+        st.image("Gcp Figures_image/Less than 60_roof.png", caption="ASCE 7-16 Roof GCp Figure")
         st.dataframe(roof_df, use_container_width=True)
         st.plotly_chart(plot_gcp(roof_df, "Roof External Pressure Coefficient, GCp"), use_container_width=True)
