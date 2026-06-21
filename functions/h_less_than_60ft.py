@@ -33,52 +33,71 @@ def show_h_less_than_60ft(height):
         return np.interp(area, df["Area (sf)"], df[gcp_column])
 
     def draw_gcp_on_image(image_path, area, gcp, figure_type="wall"):
-    img = Image.open(image_path).convert("RGB")
-    draw = ImageDraw.Draw(img)
+        img = Image.open(image_path).convert("RGB")
+        draw = ImageDraw.Draw(img)
 
-    img_width, img_height = img.size
+        img_width, img_height = img.size
 
-    st.write(f"Image size: {img_width} x {img_height}")
+        st.write(f"Image size: {img_width} x {img_height}")
+        st.markdown("##### Calibrate Graph Boundary")
 
-    st.markdown("##### Calibrate Graph Boundary")
+        col1, col2 = st.columns(2)
 
-    col1, col2 = st.columns(2)
+        with col1:
+            plot_left = st.slider(
+                f"{figure_type}_plot_left",
+                0,
+                img_width,
+                int(img_width * 0.38),
+            )
+            plot_right = st.slider(
+                f"{figure_type}_plot_right",
+                0,
+                img_width,
+                int(img_width * 0.86),
+            )
 
-    with col1:
-        plot_left = st.slider(f"{figure_type}_plot_left", 0, img_width, int(img_width * 0.38))
-        plot_right = st.slider(f"{figure_type}_plot_right", 0, img_width, int(img_width * 0.86))
+        with col2:
+            plot_top = st.slider(
+                f"{figure_type}_plot_top",
+                0,
+                img_height,
+                int(img_height * 0.18),
+            )
+            plot_bottom = st.slider(
+                f"{figure_type}_plot_bottom",
+                0,
+                img_height,
+                int(img_height * 0.78),
+            )
 
-    with col2:
-        plot_top = st.slider(f"{figure_type}_plot_top", 0, img_height, int(img_height * 0.18))
-        plot_bottom = st.slider(f"{figure_type}_plot_bottom", 0, img_height, int(img_height * 0.78))
+        if figure_type == "wall":
+            y_top_gcp = -1.8
+            y_bottom_gcp = 1.2
+        else:
+            y_top_gcp = -4.0
+            y_bottom_gcp = 1.0
 
-    if figure_type == "wall":
-        y_top_gcp = -1.8
-        y_bottom_gcp = 1.2
-    else:
-        y_top_gcp = -4.0
-        y_bottom_gcp = 1.0
+        x_min_area = 1
+        x_max_area = 1000
 
-    x_min_area = 1
-    x_max_area = 1000
+        x = plot_left + (
+            (math.log10(area) - math.log10(x_min_area))
+            / (math.log10(x_max_area) - math.log10(x_min_area))
+        ) * (plot_right - plot_left)
 
-    x = plot_left + (
-        (math.log10(area) - math.log10(x_min_area))
-        / (math.log10(x_max_area) - math.log10(x_min_area))
-    ) * (plot_right - plot_left)
+        y = plot_top + (
+            (gcp - y_top_gcp)
+            / (y_bottom_gcp - y_top_gcp)
+        ) * (plot_bottom - plot_top)
 
-    y = plot_top + (
-        (gcp - y_top_gcp)
-        / (y_bottom_gcp - y_top_gcp)
-    ) * (plot_bottom - plot_top)
+        draw.line([(x, plot_top), (x, plot_bottom)], fill="red", width=4)
+        draw.line([(plot_left, y), (plot_right, y)], fill="blue", width=4)
 
-    draw.line([(x, plot_top), (x, plot_bottom)], fill="red", width=4)
-    draw.line([(plot_left, y), (plot_right, y)], fill="blue", width=4)
+        r = 7
+        draw.ellipse((x - r, y - r, x + r, y + r), fill="black")
 
-    r = 7
-    draw.ellipse((x - r, y - r, x + r, y + r), fill="black")
-
-    return img
+        return img
 
     tab1, tab2 = st.tabs(["Wall GCp", "Roof GCp"])
 
@@ -116,6 +135,7 @@ def show_h_less_than_60ft(height):
             gcp=wall_gcp,
             figure_type="wall",
         )
+
         st.image(
             wall_image,
             caption="Wall GCp figure with selected effective wind area and GCp",
