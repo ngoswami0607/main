@@ -109,7 +109,7 @@ def lookup_state_ibc_iecc_from_iccsafe_adoptions(state_abbr: str, debug: bool = 
 
 
 def code_jurisdiction_1() -> Dict[str, object]:
-    st.header("3️⃣ Code Jurisdiction / Project Location")
+    st.header("Code Jurisdiction / Project Location")
 
     city = st.text_input("City", value="Milwaukee")
 
