@@ -33,7 +33,7 @@ jurisdiction = code_jurisdiction_1()
 # Step 4
 risk_category = risk_category()
 
-# Step 5
+# Step 5 (just added)
 internal_pressure = internal_pressure()
 
 # Step 6
