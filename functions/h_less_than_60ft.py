@@ -4,6 +4,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import streamlit as st
+import plotly.graph_objects as go
 from PIL import Image, ImageDraw
 
 
@@ -89,128 +90,6 @@ def show_h_less_than_60ft(
         raise ValueError(
             "pressure_case must be either 'positive' or 'negative'."
         )
-
-    def draw_gcp_on_image(
-        image_path,
-        area,
-        gcp,
-        figure_type="wall",
-    ):
-        """
-        Draw area and GCp guide lines on the source ASCE figure.
-        """
-
-        image_path = Path(image_path)
-
-        if not image_path.exists():
-            st.error(f"Image file not found: {image_path}")
-            return None
-
-        img = Image.open(image_path).convert("RGB")
-        draw = ImageDraw.Draw(img)
-
-        img_width, img_height = img.size
-
-        st.caption(
-            f"{figure_type.title()} figure image size: "
-            f"{img_width} × {img_height} pixels"
-        )
-
-        with st.expander(
-            f"Calibrate {figure_type.title()} Figure Boundary",
-            expanded=False,
-        ):
-            col1, col2 = st.columns(2)
-
-            with col1:
-                plot_left = st.slider(
-                    f"{figure_type}_plot_left",
-                    min_value=0,
-                    max_value=img_width,
-                    value=int(img_width * 0.38),
-                )
-
-                plot_right = st.slider(
-                    f"{figure_type}_plot_right",
-                    min_value=0,
-                    max_value=img_width,
-                    value=int(img_width * 0.86),
-                )
-
-            with col2:
-                plot_top = st.slider(
-                    f"{figure_type}_plot_top",
-                    min_value=0,
-                    max_value=img_height,
-                    value=int(img_height * 0.18),
-                )
-
-                plot_bottom = st.slider(
-                    f"{figure_type}_plot_bottom",
-                    min_value=0,
-                    max_value=img_height,
-                    value=int(img_height * 0.78),
-                )
-
-        if plot_right <= plot_left:
-            st.error("Plot right must be greater than plot left.")
-            return img
-
-        if plot_bottom <= plot_top:
-            st.error("Plot bottom must be greater than plot top.")
-            return img
-
-        if figure_type == "wall":
-            y_top_gcp = -1.80
-            y_bottom_gcp = 1.20
-        else:
-            y_top_gcp = -4.00
-            y_bottom_gcp = 1.00
-
-        x_min_area = 1.0
-        x_max_area = 1000.0
-
-        x = plot_left + (
-            (
-                math.log10(area)
-                - math.log10(x_min_area)
-            )
-            / (
-                math.log10(x_max_area)
-                - math.log10(x_min_area)
-            )
-        ) * (plot_right - plot_left)
-
-        y = plot_top + (
-            (gcp - y_top_gcp)
-            / (y_bottom_gcp - y_top_gcp)
-        ) * (plot_bottom - plot_top)
-
-        draw.line(
-            [(x, plot_top), (x, plot_bottom)],
-            fill="red",
-            width=4,
-        )
-
-        draw.line(
-            [(plot_left, y), (plot_right, y)],
-            fill="blue",
-            width=4,
-        )
-
-        radius = 7
-
-        draw.ellipse(
-            (
-                x - radius,
-                y - radius,
-                x + radius,
-                y + radius,
-            ),
-            fill="black",
-        )
-
-        return img
 
     # ---------------------------------------------------------
     # Create complete pressure table
@@ -347,6 +226,279 @@ def show_h_less_than_60ft(
 
     pressure_df = pd.DataFrame(pressure_rows)
 
+    def wall_gcp_values(effective_area):
+    """
+    Calculate wall GCp values from ASCE 7-16 Table C30.3-1.
+
+    Parameters
+    ----------
+    effective_area : float
+        Effective wind area, ft².
+
+    Returns
+    -------
+    tuple
+        Positive Zones 4 & 5 GCp,
+        Negative Zone 4 GCp,
+        Negative Zone 5 GCp.
+    """
+
+    area = float(effective_area)
+
+    if area <= 10:
+        positive_gcp = 1.00
+        zone_4_negative_gcp = -1.10
+        zone_5_negative_gcp = -1.40
+
+    elif area <= 500:
+        log_area = math.log10(area)
+
+        positive_gcp = 1.1766 - 0.1766 * log_area
+
+        zone_4_negative_gcp = (
+            -1.2766 + 0.1766 * log_area
+        )
+
+        zone_5_negative_gcp = (
+            -1.7532 + 0.3532 * log_area
+        )
+
+    else:
+        positive_gcp = 0.70
+        zone_4_negative_gcp = -0.80
+        zone_5_negative_gcp = -0.80
+
+    return (
+        positive_gcp,
+        zone_4_negative_gcp,
+        zone_5_negative_gcp,
+    )
+
+
+def create_wall_gcp_dataframe():
+    """
+    Create GCp values at the standard effective wind areas.
+    """
+
+    standard_areas = [10, 20, 50, 100, 200, 500, 1000]
+
+    rows = []
+
+    for area in standard_areas:
+        positive, zone_4_negative, zone_5_negative = (
+            wall_gcp_values(area)
+        )
+
+        rows.append(
+            {
+                "Area (sf)": area,
+                "Wall Zones 4 & 5 Positive": positive,
+                "Wall Zone 4 Negative": zone_4_negative,
+                "Wall Zone 5 Negative": zone_5_negative,
+            }
+        )
+
+    return pd.DataFrame(rows)
+
+
+def create_wall_gcp_chart(selected_area):
+    """
+    Create an interactive wall GCp chart with a logarithmic x-axis
+    and reversed y-axis.
+    """
+
+    chart_areas = np.logspace(
+        math.log10(10),
+        math.log10(1000),
+        250,
+    )
+
+    positive_values = []
+    zone_4_negative_values = []
+    zone_5_negative_values = []
+
+    for area in chart_areas:
+        positive, zone_4_negative, zone_5_negative = (
+            wall_gcp_values(area)
+        )
+
+        positive_values.append(positive)
+        zone_4_negative_values.append(zone_4_negative)
+        zone_5_negative_values.append(zone_5_negative)
+
+    (
+        selected_positive,
+        selected_zone_4_negative,
+        selected_zone_5_negative,
+    ) = wall_gcp_values(selected_area)
+
+    fig = go.Figure()
+
+    # Positive Zones 4 and 5
+    fig.add_trace(
+        go.Scatter(
+            x=chart_areas,
+            y=positive_values,
+            mode="lines",
+            name="Zones 4 & 5 Positive",
+            line=dict(width=3),
+            hovertemplate=(
+                "Area: %{x:.1f} ft²"
+                "<br>GCp: %{y:.3f}"
+                "<extra></extra>"
+            ),
+        )
+    )
+
+    # Negative Zone 4
+    fig.add_trace(
+        go.Scatter(
+            x=chart_areas,
+            y=zone_4_negative_values,
+            mode="lines",
+            name="Zone 4 Negative",
+            line=dict(width=3),
+            hovertemplate=(
+                "Area: %{x:.1f} ft²"
+                "<br>GCp: %{y:.3f}"
+                "<extra></extra>"
+            ),
+        )
+    )
+
+    # Negative Zone 5
+    fig.add_trace(
+        go.Scatter(
+            x=chart_areas,
+            y=zone_5_negative_values,
+            mode="lines",
+            name="Zone 5 Negative",
+            line=dict(width=3),
+            hovertemplate=(
+                "Area: %{x:.1f} ft²"
+                "<br>GCp: %{y:.3f}"
+                "<extra></extra>"
+            ),
+        )
+    )
+
+    # Selected-area markers
+    fig.add_trace(
+        go.Scatter(
+            x=[
+                selected_area,
+                selected_area,
+                selected_area,
+            ],
+            y=[
+                selected_positive,
+                selected_zone_4_negative,
+                selected_zone_5_negative,
+            ],
+            mode="markers+text",
+            name="Selected Area",
+            marker=dict(
+                size=11,
+                color="black",
+            ),
+            text=[
+                f"{selected_positive:.3f}",
+                f"{selected_zone_4_negative:.3f}",
+                f"{selected_zone_5_negative:.3f}",
+            ],
+            textposition=[
+                "bottom right",
+                "top right",
+                "top right",
+            ],
+            hovertemplate=(
+                "Area: %{x:.1f} ft²"
+                "<br>GCp: %{y:.3f}"
+                "<extra></extra>"
+            ),
+        )
+    )
+
+    # Vertical selected-area line
+    fig.add_vline(
+        x=selected_area,
+        line_width=2,
+        line_dash="dash",
+        line_color="red",
+        annotation_text=f"A = {selected_area:.0f} ft²",
+        annotation_position="top",
+    )
+
+    # Zero-pressure reference line
+    fig.add_hline(
+        y=0,
+        line_width=1,
+        line_color="gray",
+    )
+
+    fig.update_layout(
+        title=(
+            "Components and Cladding "
+            "[h ≤ 60 ft (h ≤ 18.3 m)] "
+            "(Figure 30.3-1)"
+        ),
+        xaxis_title="Effective Wind Area, A (ft²)",
+        yaxis_title="External Pressure Coefficient, GCp",
+        hovermode="x unified",
+        height=650,
+        margin=dict(
+            left=70,
+            right=40,
+            top=90,
+            bottom=70,
+        ),
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="left",
+            x=0,
+        ),
+    )
+
+    fig.update_xaxes(
+        type="log",
+        tickmode="array",
+        tickvals=[
+            10,
+            20,
+            50,
+            100,
+            200,
+            500,
+            1000,
+        ],
+        ticktext=[
+            "10",
+            "20",
+            "50",
+            "100",
+            "200",
+            "500",
+            "1000",
+        ],
+        showgrid=True,
+        minor=dict(showgrid=True),
+    )
+
+    # Reverse the y-axis so negative values appear at the top
+    fig.update_yaxes(
+        autorange="reversed",
+        range=[1.2, -1.8],
+        tick0=-1.8,
+        dtick=0.2,
+        showgrid=True,
+        zeroline=True,
+    )
+
+    return fig
+
+
     # ---------------------------------------------------------
     # User-selected GCp calculations
     # ---------------------------------------------------------
@@ -360,80 +512,119 @@ def show_h_less_than_60ft(
     )
 
     with tab1:
-        st.markdown(
-            "#### Wall External Pressure Coefficient, GCp"
-        )
+    st.markdown(
+        "#### Wall External Pressure Coefficient, GCp"
+    )
 
-        wall_area = st.number_input(
-            "Effective Wind Area for Wall, A (sq. ft.)",
-            min_value=10.0,
-            max_value=1000.0,
-            value=10.0,
-            step=10.0,
-            key="wall_area_input",
-        )
+    wall_area = st.slider(
+        "Effective Wind Area for Wall, A (ft²)",
+        min_value=10,
+        max_value=1000,
+        value=10,
+        step=1,
+        key="wall_area_slider",
+    )
 
-        wall_case = st.selectbox(
-            "Select Wall Zone / Pressure Case",
-            [
-                "Wall Zone 4 Negative",
-                "Wall Zone 5 Negative",
-                "Wall Zone 4 & 5 Positive",
-            ],
-            key="wall_case_select",
-        )
+    (
+        wall_positive_gcp,
+        wall_zone_4_negative_gcp,
+        wall_zone_5_negative_gcp,
+    ) = wall_gcp_values(wall_area)
 
-        wall_gcp = interpolate_gcp(
-            wall_area,
-            wall_df,
-            wall_case,
-        )
+    # Net pressures
+    wall_positive_pressure = q * (
+        wall_positive_gcp - gcpi_negative
+    )
 
-        if "Positive" in wall_case:
-            wall_pressure = calculate_pressure(
-                wall_gcp,
-                "positive",
-            )
-            governing_gcpi = gcpi_negative
-        else:
-            wall_pressure = calculate_pressure(
-                wall_gcp,
-                "negative",
-            )
-            governing_gcpi = gcpi_positive
+    wall_zone_4_negative_pressure = q * (
+        wall_zone_4_negative_gcp - gcpi_positive
+    )
 
-        st.success(
-            f"{wall_case}: "
-            f"GCp = {wall_gcp:.2f}, "
-            f"GCpi = {governing_gcpi:+.2f}, "
-            f"Pressure = {wall_pressure:.2f} psf "
-            f"at A = {wall_area:.0f} sq. ft."
-        )
+    wall_zone_5_negative_pressure = q * (
+        wall_zone_5_negative_gcp - gcpi_positive
+    )
 
-        wall_image = draw_gcp_on_image(
-            image_path=(
-                "Gcp Figures_image/"
-                "Less than 60_wall.png"
+    st.markdown("##### GCp at Selected Effective Area")
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        st.metric(
+            label="Zones 4 & 5 Positive GCp",
+            value=f"{wall_positive_gcp:+.3f}",
+            delta=(
+                f"Pressure: "
+                f"{wall_positive_pressure:+.2f} psf"
             ),
-            area=wall_area,
-            gcp=wall_gcp,
-            figure_type="wall",
+            delta_color="off",
         )
 
-        if wall_image is not None:
-            st.image(
-                wall_image,
-                caption=(
-                    "Wall GCp figure with selected effective "
-                    "wind area and GCp"
-                ),
-                width=700,
-            )
+    with col2:
+        st.metric(
+            label="Zone 4 Negative GCp",
+            value=f"{wall_zone_4_negative_gcp:+.3f}",
+            delta=(
+                f"Pressure: "
+                f"{wall_zone_4_negative_pressure:+.2f} psf"
+            ),
+            delta_color="off",
+        )
 
+    with col3:
+        st.metric(
+            label="Zone 5 Negative GCp",
+            value=f"{wall_zone_5_negative_gcp:+.3f}",
+            delta=(
+                f"Pressure: "
+                f"{wall_zone_5_negative_pressure:+.2f} psf"
+            ),
+            delta_color="off",
+        )
+
+    st.caption(
+        f"Selected effective area = {wall_area:.0f} ft² | "
+        f"q = {q:.2f} psf | "
+        f"GCpi positive = {gcpi_positive:+.2f} | "
+        f"GCpi negative = {gcpi_negative:+.2f}"
+    )
+
+    wall_chart = create_wall_gcp_chart(wall_area)
+
+    st.plotly_chart(
+        wall_chart,
+        use_container_width=True,
+        key="wall_gcp_interactive_chart",
+    )
+
+    with st.expander(
+        "Show Wall GCp Values",
+        expanded=False,
+    ):
         st.dataframe(
             wall_df,
-            use_container_width=True,
+            width="stretch",
             hide_index=True,
+            column_config={
+                "Area (sf)": st.column_config.NumberColumn(
+                    "Effective Area (ft²)",
+                    format="%.0f",
+                ),
+                "Wall Zones 4 & 5 Positive":
+                    st.column_config.NumberColumn(
+                        "Zones 4 & 5 Positive",
+                        format="%.3f",
+                    ),
+                "Wall Zone 4 Negative":
+                    st.column_config.NumberColumn(
+                        "Zone 4 Negative",
+                        format="%.3f",
+                    ),
+                "Wall Zone 5 Negative":
+                    st.column_config.NumberColumn(
+                        "Zone 5 Negative",
+                        format="%.3f",
+                    ),
+            },
         )
 
     with tab2:
