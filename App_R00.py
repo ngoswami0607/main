@@ -34,12 +34,15 @@ jurisdiction = code_jurisdiction_1()
 risk_category = risk_category()
 
 # Step 5
-V = wind_speed()
+internal_pressure = internal_pressure()
 
 # Step 6
-exposure, Kz, q = wind_pressure_calc(height, V)
+V = wind_speed()
 
 # Step 7
+exposure, Kz, q = wind_pressure_calc(height, V)
+
+# Step 8
 if height <= 60:
     show_h_less_than_60ft(height)
 
