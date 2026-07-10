@@ -1,6 +1,6 @@
 import streamlit as st
 
-from functions.gcp_data import (
+from functions.GCP_h_Less_than_60 import (
     get_wall_gcp_data,
     get_roof_gcp_data
 )
