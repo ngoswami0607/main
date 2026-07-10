@@ -34,17 +34,22 @@ jurisdiction = code_jurisdiction_1()
 # Step 4
 risk_category = risk_category()
 
-# Internal pressure classification
-enclosure_classification, gcpi_positive, gcpi_negative = internal_pressure()
-
-# Step 6
+# Step 5
 V = wind_speed()
 
-# Step 7
+# Step 6
 exposure, Kz, q = wind_pressure_calc(height, V)
 
+# Step 7: Internal pressure classification
+enclosure, gcpi_positive, gcpi_negative = internal_pressure()
+
 # Step 8
-if height <= 60:
-    show_h_less_than_60ft(height)
+if height < 60:
+    show_h_less_than_60ft(
+        height=height,
+        q=q,
+        gcpi_positive=gcpi_positive,
+        gcpi_negative=gcpi_negative,
+    )
 
 
