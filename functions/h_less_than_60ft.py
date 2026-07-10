@@ -66,9 +66,6 @@ def show_h_less_than_60ft(
 
 
         positive, z4, z5 = wall_gcp(area)
-
-        #check
-        st.write("DEBUG:", positive, z4, z5)
         
         # GCp output boxes
         col1, col2, col3 = st.columns(3)
