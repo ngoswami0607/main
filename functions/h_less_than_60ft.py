@@ -35,7 +35,26 @@ def show_h_less_than_60ft(
     })
 
     def interpolate_gcp(area, df, gcp_column):
-        return np.interp(area, df["Area (sf)"], df[gcp_column])
+    return float(
+        np.interp(
+            math.log10(area),
+            np.log10(df["Area (sf)"].astype(float)),
+            df[gcp_column].astype(float),
+        )
+    )
+
+    def calculate_pressure(gcp, pressure_case):
+    """
+    Calculates net C&C pressure.
+
+    Positive external pressure uses negative GCpi.
+    Negative external pressure uses positive GCpi.
+    """
+
+    if pressure_case == "positive":
+        return q * (gcp - gcpi_negative)
+
+    return q * (gcp - gcpi_positive)
 
     def draw_gcp_on_image(image_path, area, gcp, figure_type="wall"):
         img = Image.open(image_path).convert("RGB")
@@ -130,9 +149,20 @@ def show_h_less_than_60ft(
 
         wall_gcp = interpolate_gcp(wall_area, wall_df, wall_case)
 
-        st.success(
-            f"{wall_case}: GCp = {wall_gcp:.2f} at A = {wall_area:.0f} sq. ft."
-        )
+if "Positive" in wall_case:
+    wall_pressure = calculate_pressure(wall_gcp, "positive")
+    governing_gcpi = gcpi_negative
+else:
+    wall_pressure = calculate_pressure(wall_gcp, "negative")
+    governing_gcpi = gcpi_positive
+
+st.success(
+    f"{wall_case}: "
+    f"GCp = {wall_gcp:.2f}, "
+    f"GCpi = {governing_gcpi:+.2f}, "
+    f"Pressure = {wall_pressure:.2f} psf "
+    f"at A = {wall_area:.0f} sq. ft."
+)
 
         wall_image = draw_gcp_on_image(
             image_path="Gcp Figures_image/Less than 60_wall.png",
@@ -175,9 +205,20 @@ def show_h_less_than_60ft(
 
         roof_gcp = interpolate_gcp(roof_area, roof_df, roof_case)
 
-        st.success(
-            f"{roof_case}: GCp = {roof_gcp:.2f} at A = {roof_area:.0f} sq. ft."
-        )
+if "Positive" in roof_case:
+    roof_pressure = calculate_pressure(roof_gcp, "positive")
+    governing_gcpi = gcpi_negative
+else:
+    roof_pressure = calculate_pressure(roof_gcp, "negative")
+    governing_gcpi = gcpi_positive
+
+st.success(
+    f"{roof_case}: "
+    f"GCp = {roof_gcp:.2f}, "
+    f"GCpi = {governing_gcpi:+.2f}, "
+    f"Pressure = {roof_pressure:.2f} psf "
+    f"at A = {roof_area:.0f} sq. ft."
+)
 
         roof_image = draw_gcp_on_image(
             image_path="Gcp Figures_image/Less than 60_roof.png",
@@ -193,3 +234,111 @@ def show_h_less_than_60ft(
         )
 
         st.dataframe(roof_df, use_container_width=True)
+pressure_rows = []
+
+for area in areas:
+    roof_z1_pos_gcp = interpolate_gcp(
+        area,
+        roof_df,
+        "Roof Zone 1 Positive",
+    )
+    roof_z1_neg_gcp = interpolate_gcp(
+        area,
+        roof_df,
+        "Roof Zone 1 Negative",
+    )
+
+    roof_z2_pos_gcp = interpolate_gcp(
+        area,
+        roof_df,
+        "Roof Zones 1,2,3 Positive",
+    )
+    roof_z2_neg_gcp = interpolate_gcp(
+        area,
+        roof_df,
+        "Roof Zone 2 Negative",
+    )
+
+    roof_z3_pos_gcp = interpolate_gcp(
+        area,
+        roof_df,
+        "Roof Zones 1,2,3 Positive",
+    )
+    roof_z3_neg_gcp = interpolate_gcp(
+        area,
+        roof_df,
+        "Roof Zone 3 Negative",
+    )
+
+    wall_z4_pos_gcp = interpolate_gcp(
+        area,
+        wall_df,
+        "Wall Zone 4 & 5 Positive",
+    )
+    wall_z4_neg_gcp = interpolate_gcp(
+        area,
+        wall_df,
+        "Wall Zone 4 Negative",
+    )
+
+    wall_z5_pos_gcp = interpolate_gcp(
+        area,
+        wall_df,
+        "Wall Zone 4 & 5 Positive",
+    )
+    wall_z5_neg_gcp = interpolate_gcp(
+        area,
+        wall_df,
+        "Wall Zone 5 Negative",
+    )
+
+    pressure_rows.append({
+        "Effective Wind Area (sf)": area,
+
+        "Roof Zone 1 Positive (psf)": calculate_pressure(
+            roof_z1_pos_gcp,
+            "positive",
+        ),
+        "Roof Zone 1 Negative (psf)": calculate_pressure(
+            roof_z1_neg_gcp,
+            "negative",
+        ),
+
+        "Roof Zone 2 Positive (psf)": calculate_pressure(
+            roof_z2_pos_gcp,
+            "positive",
+        ),
+        "Roof Zone 2 Negative (psf)": calculate_pressure(
+            roof_z2_neg_gcp,
+            "negative",
+        ),
+
+        "Roof Zone 3 Positive (psf)": calculate_pressure(
+            roof_z3_pos_gcp,
+            "positive",
+        ),
+        "Roof Zone 3 Negative (psf)": calculate_pressure(
+            roof_z3_neg_gcp,
+            "negative",
+        ),
+
+        "Wall Zone 4 Positive (psf)": calculate_pressure(
+            wall_z4_pos_gcp,
+            "positive",
+        ),
+        "Wall Zone 4 Negative (psf)": calculate_pressure(
+            wall_z4_neg_gcp,
+            "negative",
+        ),
+
+        "Wall Zone 5 Positive (psf)": calculate_pressure(
+            wall_z5_pos_gcp,
+            "positive",
+        ),
+        "Wall Zone 5 Negative (psf)": calculate_pressure(
+            wall_z5_neg_gcp,
+            "negative",
+        ),
+    })
+
+pressure_df = pd.DataFrame(pressure_rows)
