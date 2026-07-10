@@ -11,7 +11,7 @@ from functions.wind_speed import wind_speed
 from functions.wind_pressure_calc import wind_pressure_calc
 from functions.roof_type_picker import roof_type_picker
 from functions.internal_pressure import internal_pressure
-from functions.h_less_than_60ft import show_h_less_than_60ft
+from functions.wall_less_than_60ft import show_wall_less_than_60ft
 
 authenticate_user()
 
@@ -47,7 +47,7 @@ enclosure,gcpi_positive,gcpi_negative = internal_pressure()
 # Step 8
 if height < 60:
 
-    show_h_less_than_60ft(
+    show_wall_less_than_60ft(
         height,
         q,
         gcpi_positive,
