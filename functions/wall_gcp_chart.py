@@ -51,9 +51,9 @@ def create_wall_chart(selected_area):
 
 
     x = np.logspace(
-        1,
+        0,
         3,
-        200
+        300
     )
 
 
@@ -113,9 +113,12 @@ def create_wall_chart(selected_area):
 
 
     fig.update_xaxes(
-        type="log"
+        type="log",
+        range=[0,3],
+        tickmode="array",
+        tickvals=[1, 10,20,50,100,200,500,1000],
+        ticktext=["1","10", "20", "50", "100", "200", "500", "1000"    ]
     )
-
 
     fig.update_yaxes(
         range=[1.2,-1.8]
