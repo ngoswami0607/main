@@ -68,7 +68,7 @@ def show_wall_less_than_60ft(
         positive, z4, z5 = wall_gcp(area)
         pressure1 = 0.6*q*(positive-gcpi_negative)
         pressure2 = 0.6*q*(z4-gcpi_negative)
-        pressure3 = 0.6*q*(z5-gcpi_postive)
+        pressure3 = 0.6*q*(z5 - gcpi_positive)
         
         # GCp output boxes
         col1, col2, col3 = st.columns(3)
