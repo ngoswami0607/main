@@ -40,41 +40,25 @@ def show_h_less_than_60ft(
 
     with tab1:
 
-
-        area = st.slider(
-            "Effective Wind Area",
-            10,
-            1000,
-            10
-        )
-
-
+        st.markdown("### Components and Cladding [h ≤ 60 ft (h ≤ 18.3 m)] (Figure 30.3-1))
+        area = st.slider("Effective Wind Area (ft²)", min_value=1, max_value=1000,value=10)
         positive,z4,z5 = wall_gcp(area)
-
-
-        st.write(
-            f"Positive GCp = {positive:.3f}"
-        )
-
-        st.write(
-            f"Zone 4 GCp = {z4:.3f}"
-        )
-
-        st.write(
-            f"Zone 5 GCp = {z5:.3f}"
-        )
-
-
-        fig=create_wall_chart(area)
-
-        st.plotly_chart(
-            fig,
-            use_container_width=True
-        )
-
+        fig = create_wall_chart(area)
+        st.plotly_chart(fig, use_container_width=True)
+        st.markdown("#### GCp Values"        )
+        wall_df = get_wall_gcp_data()
+        st.dataframe(wall_df, width="stretch", hide_index=True)
 
     with tab2:
 
-        st.dataframe(
-            wall_df
-        )
+    st.markdown(
+        "### Components and Cladding "
+        "[h ≤ 60 ft (h ≤ 18.3 m)] "
+        "(Figure 30.3-1)"
+    )
+
+    st.caption(
+        f"q = {q:.2f} psf | "
+        f"GCpi + = {gcpi_positive:+.2f} | "
+        f"GCpi - = {gcpi_negative:+.2f}"
+    )
