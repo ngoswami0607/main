@@ -66,10 +66,14 @@ def show_h_less_than_60ft(
 
 
         positive, z4, z5 = wall_gcp(area)
-
+        
+        # GCp output boxes
+        col1, col2, col3 = st.columns(3)
+        with col1:st.metric("GCp Zone 4 & 5 Positive",f"{positive:+.3f}"        )
+        with col2:st.metric("GCp Zone 4 Negative",f"{z4:+.3f}")
+        with col3:st.metric("GCp Zone 5 Negative",f"{z5:+.3f}")
 
         fig = create_wall_chart(area)
-
 
         st.plotly_chart(
             fig,
