@@ -23,10 +23,7 @@ def show_h_less_than_60ft(
         return
 
 
-    st.header(
-        "ASCE 7-16 Components & Cladding"
-    )
-
+    st.header("ASCE 7-16 Components & Cladding")
 
     pressure_df = create_wall_pressure_table(q, gcpi_positive,gcpi_negative)
 
@@ -53,5 +50,5 @@ def show_h_less_than_60ft(
     with tab2:
 
         st.markdown("### Components and Cladding [h ≤ 60 ft (h ≤ 18.3 m)] (Figure 30.3-1))
-
         st.caption(f"q = {q:.2f} psf | f"GCpi + = {gcpi_positive:+.2f} | f"GCpi - = {gcpi_negative:+.2f})
+        st.dataframe(pressure_df,width="stretch",hide_index=True)
