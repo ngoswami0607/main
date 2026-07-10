@@ -78,9 +78,9 @@ def show_wall_less_than_60ft(
         
         # pressure output boxes
         col4, col5, col6 = st.columns(3)
-        with col4:st.metric("Pressure Zone 4 & 5 Positive", f"{pressure1:+.2f} psf")
-        with col5:st.metric("Pressure Zone 4 Negative", f"{pressure2:+.2f} psf")
-        with col6:st.metric("Pressure Zone 5 Negative", f"{pressure3:+.2f} psf")
+        with col4:st.metric("ASD Pressure Z4&5 Positive", f"{pressure1:+.2f} psf")
+        with col5:st.metric("ASD Pressure Z4 Negative", f"{pressure2:+.2f} psf")
+        with col6:st.metric("ASD Pressure Z5 Negative", f"{pressure3:+.2f} psf")
 
         fig = create_wall_chart(area)
 
