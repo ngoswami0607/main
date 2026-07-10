@@ -544,8 +544,8 @@ def show_h_less_than_60ft(
 
         st.dataframe(
             styled_pressure_df,
-            use_container_width=True,
+            width="stretch",
+            height=320,
             hide_index=True,
         )
-
     return pressure_df
