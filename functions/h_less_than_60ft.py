@@ -5,7 +5,12 @@ import streamlit as st
 from PIL import Image, ImageDraw
 
 
-def show_h_less_than_60ft(height):
+def show_h_less_than_60ft(
+    height,
+    q,
+    gcpi_positive,
+    gcpi_negative,
+):
     if height >= 60:
         return
 
