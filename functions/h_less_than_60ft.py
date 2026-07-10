@@ -1,4 +1,5 @@
 import streamlit as st
+
 from functions.pressure_table import create_wall_pressure_table
 
 from functions.GCP_h_Less_than_60 import (
@@ -19,16 +20,23 @@ def show_h_less_than_60ft(
     gcpi_negative
 ):
 
-    if height >=60:
+    if height >= 60:
         return
 
 
-    st.header("ASCE 7-16 Components & Cladding")
+    st.header(
+        "ASCE 7-16 Components & Cladding"
+    )
 
-    pressure_df = create_wall_pressure_table(q, gcpi_positive,gcpi_negative)
+
+    pressure_df = create_wall_pressure_table(
+        q,
+        gcpi_positive,
+        gcpi_negative
+    )
 
 
-    tab1,tab2 = st.tabs(
+    tab1, tab2 = st.tabs(
         [
             "Wall GCp",
             "Pressure Table"
@@ -36,19 +44,76 @@ def show_h_less_than_60ft(
     )
 
 
+    # -------------------------
+    # WALL GCp TAB
+    # -------------------------
+
     with tab1:
 
-        st.markdown("### Components and Cladding [h ≤ 60 ft (h ≤ 18.3 m)] (Figure 30.3-1)")
-        area = st.slider("Effective Wind Area (ft²)", min_value=1, max_value=1000,value=10)
-        positive,z4,z5 = wall_gcp(area)
+        st.markdown(
+            "### Components and Cladding "
+            "[h ≤ 60 ft (h ≤ 18.3 m)] "
+            "(Figure 30.3-1)"
+        )
+
+
+        area = st.slider(
+            "Effective Wind Area (ft²)",
+            min_value=1,
+            max_value=1000,
+            value=10
+        )
+
+
+        positive, z4, z5 = wall_gcp(area)
+
+
         fig = create_wall_chart(area)
-        st.plotly_chart(fig, use_container_width=True)
-        st.markdown("#### GCp Values"        )
+
+
+        st.plotly_chart(
+            fig,
+            use_container_width=True
+        )
+
+
+        st.markdown(
+            "#### GCp Values"
+        )
+
+
         wall_df = get_wall_gcp_data()
-        st.dataframe(wall_df, width="stretch", hide_index=True)
+
+
+        st.dataframe(
+            wall_df,
+            width="stretch",
+            hide_index=True
+        )
+
+
+    # -------------------------
+    # PRESSURE TAB
+    # -------------------------
 
     with tab2:
 
-        st.markdown("### Components and Cladding [h ≤ 60 ft (h ≤ 18.3 m)] (Figure 30.3-1))
-        st.caption(f"q = {q:.2f} psf | f"GCpi + = {gcpi_positive:+.2f} | f"GCpi - = {gcpi_negative:+.2f})
-        st.dataframe(pressure_df,width="stretch",hide_index=True)
+        st.markdown(
+            "### Components and Cladding "
+            "[h ≤ 60 ft (h ≤ 18.3 m)] "
+            "(Figure 30.3-1)"
+        )
+
+
+        st.caption(
+            f"q = {q:.2f} psf | "
+            f"GCpi + = {gcpi_positive:+.2f} | "
+            f"GCpi - = {gcpi_negative:+.2f}"
+        )
+
+
+        st.dataframe(
+            pressure_df,
+            width="stretch",
+            hide_index=True
+        )
