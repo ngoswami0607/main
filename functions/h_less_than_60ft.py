@@ -102,12 +102,7 @@ def show_h_less_than_60ft(
 
     with tab2:
 
-        st.markdown(
-            "### Components and Cladding "
-            "[h ≤ 60 ft (h ≤ 18.3 m)] "
-            "(Figure 30.3-1)"
-        )
-
+        st.markdown("### ASD Components and Cladding Design Load [h ≤ 60 ft (h ≤ 18.3 m)] (Figure 30.3-1)")
 
         st.caption(
             f"q = {q:.2f} psf | "
