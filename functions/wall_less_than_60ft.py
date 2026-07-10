@@ -72,15 +72,15 @@ def show_wall_less_than_60ft(
         
         # GCp output boxes
         col1, col2, col3 = st.columns(3)
-        with col1:st.metric("GCp Zone 4 & 5 Positive",f"{positive:+.3f}"        )
-        with col2:st.metric("GCp Zone 4 Negative",f"{z4:+.3f}")
-        with col3:st.metric("GCp Zone 5 Negative",f"{z5:+.3f}")
+        with col1:st.metric("GCp Zone 4 & 5 Positive", f"{positive:+.3f}")
+        with col2:st.metric("GCp Zone 4 Negative", f"{z4:+.3f}")
+        with col3:st.metric("GCp Zone 5 Negative", f"{z5:+.3f}")
         
         # pressure output boxes
-        col4, col5,col6 = st.columns(3)
-        with col4:st.metric("Field zone pressuye",f"{pressure1:+.2f}")
-        with col4:st.metric("Field zone pressuye",f"{pressure2:+.2f}")
-        with col4:st.metric("Field zone pressuye",f"{pressure3:+.2f}")
+        col4, col5, col6 = st.columns(3)
+        with col4:st.metric("Pressure Zone 4 & 5 Positive", f"{pressure1:+.2f} psf")
+        with col5:st.metric("Pressure Zone 4 Negative", f"{pressure2:+.2f} psf")
+        with col6:st.metric("Pressure Zone 5 Negative", f"{pressure3:+.2f} psf")
 
         fig = create_wall_chart(area)
 
