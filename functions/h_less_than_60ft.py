@@ -1,4 +1,5 @@
 import streamlit as st
+from functions.pressure_table import create_wall_pressure_table
 
 from functions.GCP_h_Less_than_60 import (
     get_wall_gcp_data,
