@@ -10,8 +10,8 @@ from functions.risk_category import risk_category
 from functions.wind_speed import wind_speed
 from functions.wind_pressure_calc import wind_pressure_calc
 from functions.roof_type_picker import roof_type_picker
-from functions.h_less_than_60ft import show_h_less_than_60ft
 from functions.internal_pressure import internal_pressure
+from functions.h_less_than_60ft import show_h_less_than_60ft
 
 authenticate_user()
 
@@ -42,15 +42,15 @@ V = wind_speed()
 exposure, Kz, q = wind_pressure_calc(height, V)
 
 # Step 7: Internal pressure classification
-enclosure, gcpi_positive, gcpi_negative = internal_pressure()
+enclosure,gcpi_positive,gcpi_negative = internal_pressure()
 
 # Step 8
 if height < 60:
-    show_h_less_than_60ft(
-        height=height,
-        q=q,
-        gcpi_positive=gcpi_positive,
-        gcpi_negative=gcpi_negative,
-    )
 
+    show_h_less_than_60ft(
+        height,
+        q,
+        gcpi_positive,
+        gcpi_negative
+    )
 
