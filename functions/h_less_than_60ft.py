@@ -516,107 +516,107 @@ def show_h_less_than_60ft(
         )
 
     with tab3:
-    st.markdown("#### Components & Cladding Design Pressures")
+        st.markdown("#### Components & Cladding Design Pressures")
 
-    st.caption(
-        f"q = {q:.2f} psf | "
-        f"GCpi positive = {gcpi_positive:+.2f} | "
-        f"GCpi negative = {gcpi_negative:+.2f}"
-    )
+        st.caption(
+            f"q = {q:.2f} psf | "
+            f"GCpi positive = {gcpi_positive:+.2f} | "
+            f"GCpi negative = {gcpi_negative:+.2f}"
+        )
 
     # ---------------------------------------------------------
     # Separate pressure table into roof and wall tables
     # ---------------------------------------------------------
 
-    roof_pressure_df = pressure_df[
-        [
-            "Effective Wind Area (sf)",
-            "Roof Zone 1 Positive (psf)",
-            "Roof Zone 1 Negative (psf)",
-            "Roof Zone 2 Positive (psf)",
-            "Roof Zone 2 Negative (psf)",
-            "Roof Zone 3 Positive (psf)",
-            "Roof Zone 3 Negative (psf)",
-        ]
-    ].copy()
+        roof_pressure_df = pressure_df[
+            [
+                "Effective Wind Area (sf)",
+                "Roof Zone 1 Positive (psf)",
+                "Roof Zone 1 Negative (psf)",
+                "Roof Zone 2 Positive (psf)",
+                "Roof Zone 2 Negative (psf)",
+                "Roof Zone 3 Positive (psf)",
+                "Roof Zone 3 Negative (psf)",
+            ]
+        ].copy()
 
-    wall_pressure_df = pressure_df[
-        [
-            "Effective Wind Area (sf)",
-            "Wall Zone 4 Positive (psf)",
-            "Wall Zone 4 Negative (psf)",
-            "Wall Zone 5 Positive (psf)",
-            "Wall Zone 5 Negative (psf)",
-        ]
-    ].copy()
+        wall_pressure_df = pressure_df[
+            [
+                "Effective Wind Area (sf)",
+                "Wall Zone 4 Positive (psf)",
+                "Wall Zone 4 Negative (psf)",
+                "Wall Zone 5 Positive (psf)",
+                "Wall Zone 5 Negative (psf)",
+            ]
+        ].copy()
 
-    st.markdown("##### Roof Zone Design Pressures")
+        st.markdown("##### Roof Zone Design Pressures")
 
-    st.dataframe(
-        roof_pressure_df,
-        width="stretch",
-        hide_index=True,
-        column_config={
-            "Effective Wind Area (sf)": st.column_config.NumberColumn(
-                "Effective Area (sf)",
-                format="%.0f",
-            ),
-            "Roof Zone 1 Positive (psf)": st.column_config.NumberColumn(
-                "Zone 1 + (psf)",
-                format="%.2f",
-            ),
-            "Roof Zone 1 Negative (psf)": st.column_config.NumberColumn(
-                "Zone 1 − (psf)",
-                format="%.2f",
-            ),
-            "Roof Zone 2 Positive (psf)": st.column_config.NumberColumn(
-                "Zone 2 + (psf)",
-                format="%.2f",
-            ),
-            "Roof Zone 2 Negative (psf)": st.column_config.NumberColumn(
-                "Zone 2 − (psf)",
-                format="%.2f",
-            ),
-            "Roof Zone 3 Positive (psf)": st.column_config.NumberColumn(
-                "Zone 3 + (psf)",
-                format="%.2f",
-            ),
-            "Roof Zone 3 Negative (psf)": st.column_config.NumberColumn(
-                "Zone 3 − (psf)",
-                format="%.2f",
-            ),
-        },
-    )
+        st.dataframe(
+            roof_pressure_df,
+            width="stretch",
+            hide_index=True,
+            column_config={
+                "Effective Wind Area (sf)": st.column_config.NumberColumn(
+                    "Effective Area (sf)",
+                    format="%.0f",
+                ),
+                "Roof Zone 1 Positive (psf)": st.column_config.NumberColumn(
+                    "Zone 1 + (psf)",
+                    format="%.2f",
+                ),
+                "Roof Zone 1 Negative (psf)": st.column_config.NumberColumn(
+                    "Zone 1 − (psf)",
+                    format="%.2f",
+                ),
+                "Roof Zone 2 Positive (psf)": st.column_config.NumberColumn(
+                    "Zone 2 + (psf)",
+                    format="%.2f",
+                ),
+                "Roof Zone 2 Negative (psf)": st.column_config.NumberColumn(
+                    "Zone 2 − (psf)",
+                    format="%.2f",
+                ),
+                "Roof Zone 3 Positive (psf)": st.column_config.NumberColumn(
+                    "Zone 3 + (psf)",
+                    format="%.2f",
+                ),
+                "Roof Zone 3 Negative (psf)": st.column_config.NumberColumn(
+                    "Zone 3 − (psf)",
+                    format="%.2f",
+                ),
+            },
+        )
 
-    st.markdown("##### Wall Zone Design Pressures")
+        st.markdown("##### Wall Zone Design Pressures")
 
-    st.dataframe(
-        wall_pressure_df,
-        width="stretch",
-        hide_index=True,
-        column_config={
-            "Effective Wind Area (sf)": st.column_config.NumberColumn(
-                "Effective Area (sf)",
-                format="%.0f",
-            ),
-            "Wall Zone 4 Positive (psf)": st.column_config.NumberColumn(
-                "Zone 4 + (psf)",
-                format="%.2f",
-            ),
-            "Wall Zone 4 Negative (psf)": st.column_config.NumberColumn(
-                "Zone 4 − (psf)",
-                format="%.2f",
-            ),
-            "Wall Zone 5 Positive (psf)": st.column_config.NumberColumn(
-                "Zone 5 + (psf)",
-                format="%.2f",
-            ),
-            "Wall Zone 5 Negative (psf)": st.column_config.NumberColumn(
-                "Zone 5 − (psf)",
-                format="%.2f",
-            ),
-        },
-    )
+        st.dataframe(
+            wall_pressure_df,
+            width="stretch",
+            hide_index=True,
+            column_config={
+                "Effective Wind Area (sf)": st.column_config.NumberColumn(
+                    "Effective Area (sf)",
+                    format="%.0f",
+                ),
+                "Wall Zone 4 Positive (psf)": st.column_config.NumberColumn(
+                    "Zone 4 + (psf)",
+                    format="%.2f",
+                ),
+                "Wall Zone 4 Negative (psf)": st.column_config.NumberColumn(
+                    "Zone 4 − (psf)",
+                    format="%.2f",
+                ),
+                "Wall Zone 5 Positive (psf)": st.column_config.NumberColumn(
+                    "Zone 5 + (psf)",
+                    format="%.2f",
+                ),
+                "Wall Zone 5 Negative (psf)": st.column_config.NumberColumn(
+                    "Zone 5 − (psf)",
+                    format="%.2f",
+                ),
+            },
+        )
 
         st.dataframe(
             styled_pressure_df,
