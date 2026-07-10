@@ -11,6 +11,7 @@ from functions.wind_speed import wind_speed
 from functions.wind_pressure_calc import wind_pressure_calc
 from functions.roof_type_picker import roof_type_picker
 from functions.h_less_than_60ft import show_h_less_than_60ft
+from functions.internal_pressure import internal_pressure
 
 authenticate_user()
 
@@ -33,8 +34,8 @@ jurisdiction = code_jurisdiction_1()
 # Step 4
 risk_category = risk_category()
 
-# Step 5 (just added)
-internal_pressure = internal_pressure()
+# Internal pressure classification
+enclosure_classification, gcpi_positive, gcpi_negative = internal_pressure()
 
 # Step 6
 V = wind_speed()
