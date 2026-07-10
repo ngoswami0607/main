@@ -13,7 +13,7 @@ from functions.wall_gcp_chart import (
 )
 
 
-def show_h_less_than_60ft(
+def show_wall_less_than_60ft(
     height,
     q,
     gcpi_positive,
