@@ -20,11 +20,8 @@ def show_h_less_than_60ft(
     Parameters
     ----------
     height : float - Mean roof height, ft.
-
     q : float - Velocity pressure used for components and cladding, psf.
-
     gcpi_positive : float - Positive internal pressure coefficient.
-
     gcpi_negative : float - Negative internal pressure coefficient.
     """
 
@@ -75,19 +72,19 @@ def show_h_less_than_60ft(
 
     def calculate_pressure(gcp, pressure_case):
         """
-        Calculate net C&C pressure:
+        Calculate net ASD C&C pressure:
 
-            p = q(GCp - GCpi)
+            p = 0.6*q*(GCp - GCpi)
 
-        Positive external pressure is combined with negative GCpi.
-        Negative external pressure is combined with positive GCpi.
+        ASD Positive external pressure is combined with negative GCpi.
+        ASD Negative external pressure is combined with positive GCpi.
         """
 
         if pressure_case.lower() == "positive":
-            return q * (gcp - gcpi_negative)
+            return 0.6*q * (gcp - gcpi_negative)
 
         if pressure_case.lower() == "negative":
-            return q * (gcp - gcpi_positive)
+            return 0.6*q * (gcp - gcpi_positive)
 
         raise ValueError(
             "pressure_case must be either 'positive' or 'negative'."
@@ -520,7 +517,7 @@ def show_h_less_than_60ft(
 
     with tab3:
         st.markdown(
-            "#### Components & Cladding Design Pressures"
+            "#### ASD Components & Cladding Design Pressures"
         )
 
         st.caption(
